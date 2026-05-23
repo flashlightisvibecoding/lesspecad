@@ -637,7 +637,7 @@ fun BrowserMainScreen(
                             webProgress = 10
                             url?.let {
                                 if (it != "about:blank") {
-                                    viewModel.updateTabInfo(key, "Yükleniyor...", it)
+                                    viewModel.updateTabInfo(key, Locales.getText(viewModel.appLanguage.value, "loading"), it)
                                     inputUrl = TextFieldValue(text = it)
                                 }
                             }
@@ -700,10 +700,10 @@ fun BrowserMainScreen(
                             ).absolutePath
 
                             viewModel.registerDownload(fileName, url, mimetype, path)
-                            Toast.makeText(context, "$fileName indiriliyor...", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "$fileName ${Locales.getText(viewModel.appLanguage.value, "downloading")}", Toast.LENGTH_SHORT).show()
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            Toast.makeText(context, "İndirme başlatılamadı: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "${Locales.getText(viewModel.appLanguage.value, "download_failed")}${e.localizedMessage}", Toast.LENGTH_SHORT).show()
                         }
                     }
 
@@ -787,7 +787,7 @@ fun BrowserMainScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Geri",
+                            contentDescription = Locales.getText(appLanguage, "back"),
                             tint = if (canGoBack) colors.primary else colors.onBackground.copy(alpha = 0.25f)
                         )
                     }
@@ -807,7 +807,7 @@ fun BrowserMainScreen(
                         val isIncog = privacyEnabled || (activeTab?.isIncognito == true)
                         Icon(
                             imageVector = if (isIncog) Icons.Default.Lock else Icons.Default.Search,
-                            contentDescription = "Güvenli Arama",
+                            contentDescription = Locales.getText(appLanguage, "secure_search"),
                             tint = if (isIncog) colors.primary else colors.onBackground.copy(alpha = 0.4f),
                             modifier = Modifier.size(16.dp)
                         )
@@ -848,7 +848,7 @@ fun BrowserMainScreen(
                                         keyboardController?.hide()
                                         val destinationUrl = resolveQueryUrl(inputUrl.text, searchEngine)
                                         activeTab?.let { tab ->
-                                            viewModel.updateTabInfo(tab.id, "Yükleniyor...", destinationUrl)
+                                            viewModel.updateTabInfo(tab.id, Locales.getText(appLanguage, "loading"), destinationUrl)
                                         }
                                         activeWebView?.loadUrl(destinationUrl)
                                     }
@@ -861,7 +861,7 @@ fun BrowserMainScreen(
                                 ) {
                                     if (inputUrl.text.isEmpty()) {
                                         Text(
-                                            text = "Arama yapın veya URL girin",
+                                            text = Locales.getText(appLanguage, "search_or_type_placeholder"),
                                             fontSize = 13.sp,
                                             color = colors.onBackground.copy(alpha = 0.35f)
                                         )
@@ -879,7 +879,7 @@ fun BrowserMainScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Clear,
-                                    contentDescription = "Temizle",
+                                    contentDescription = Locales.getText(appLanguage, "clear"),
                                     tint = colors.onBackground.copy(alpha = 0.4f),
                                     modifier = Modifier.size(14.dp)
                                 )
@@ -891,7 +891,7 @@ fun BrowserMainScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Refresh,
-                                    contentDescription = "Yenile",
+                                    contentDescription = Locales.getText(appLanguage, "refresh"),
                                     tint = colors.onBackground.copy(alpha = 0.4f),
                                     modifier = Modifier.size(14.dp)
                                 )
@@ -923,7 +923,7 @@ fun BrowserMainScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.MoreVert,
-                            contentDescription = "Menü",
+                            contentDescription = Locales.getText(appLanguage, "menu"),
                             tint = colors.primary
                         )
                     }
@@ -964,14 +964,14 @@ fun BrowserMainScreen(
                         onClick = { 
                             // Go back to absolute default
                             activeTab?.let { tab ->
-                                viewModel.updateTabInfo(tab.id, "Yeni Sekme", "about:blank")
+                                viewModel.updateTabInfo(tab.id, Locales.getText(appLanguage, "new_tab"), "about:blank")
                             }
                             activeWebView?.loadUrl("about:blank")
                         }
                     ) {
                         Icon(
                             imageVector = Icons.Default.Home,
-                            contentDescription = "Anasayfa",
+                            contentDescription = Locales.getText(appLanguage, "home"),
                             tint = colors.primary
                         )
                     }
@@ -986,7 +986,7 @@ fun BrowserMainScreen(
                     ) {
                         Icon(
                             imageVector = if (isCurrentBookmarked) Icons.Default.Star else Icons.Default.StarBorder,
-                            contentDescription = "Yer İmlerine Ekle",
+                            contentDescription = Locales.getText(appLanguage, "add_to_bookmarks"),
                             tint = if (isCurrentBookmarked) colors.primary else colors.onBackground.copy(alpha = 0.4f)
                         )
                     }
@@ -997,7 +997,7 @@ fun BrowserMainScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
-                            contentDescription = "Yeni Sekme",
+                            contentDescription = Locales.getText(appLanguage, "new_tab"),
                             tint = colors.primary
                         )
                     }
@@ -1027,7 +1027,7 @@ fun BrowserMainScreen(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Menu, // Reading Menu format icon
-                            contentDescription = "Okuma Görünümü",
+                            contentDescription = Locales.getText(appLanguage, "reader_view"),
                             tint = colors.primary
                         )
                     }
@@ -1038,7 +1038,7 @@ fun BrowserMainScreen(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                            contentDescription = "İleri",
+                            contentDescription = Locales.getText(appLanguage, "forward"),
                             tint = if (canGoForward) colors.primary else colors.onBackground.copy(alpha = 0.25f)
                         )
                     }
@@ -1058,7 +1058,7 @@ fun BrowserMainScreen(
                     colors = colors,
                     onSearchSubmit = { destination ->
                         activeTab?.let { tab ->
-                            viewModel.updateTabInfo(tab.id, "Yükleniyor...", destination)
+                            viewModel.updateTabInfo(tab.id, Locales.getText(appLanguage, "loading"), destination)
                         }
                         activeWebView?.loadUrl(destination)
                     }
@@ -1081,10 +1081,11 @@ fun BrowserMainScreen(
             // Real Reading Mode warm reader text container sheet overlay
             if (currentReaderContent != null) {
                 ReadingModeReader(
-                    title = currentReaderTitle ?: "Bilinmeyen Başlık",
+                    title = currentReaderTitle ?: Locales.getText(appLanguage, "blank_page"),
                     content = currentReaderContent!!,
                     onDismiss = { viewModel.clearReaderContent() },
-                    colors = colors
+                    colors = colors,
+                    appLanguage = appLanguage
                 )
             }
         }
@@ -1233,7 +1234,7 @@ fun BrowserMainScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Açık Sekmeler",
+                        text = Locales.getText(appLanguage, "active_tabs"),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = colors.primary
@@ -1245,11 +1246,11 @@ fun BrowserMainScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Folder,
-                                contentDescription = "Grup Ekle",
+                                contentDescription = Locales.getText(appLanguage, "add_group"),
                                 modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text("Grup Ekle", fontSize = 11.sp, color = colors.primary)
+                            Text(Locales.getText(appLanguage, "add_group"), fontSize = 11.sp, color = colors.primary)
                         }
 
                         IconButton(
@@ -1260,7 +1261,7 @@ fun BrowserMainScreen(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Add,
-                                contentDescription = "Yeni Sekme Ekle",
+                                contentDescription = Locales.getText(appLanguage, "add_new_tab"),
                                 tint = colors.primary
                             )
                         }
@@ -1276,7 +1277,7 @@ fun BrowserMainScreen(
                 ) {
                     // "All" filter pill
                     TabGroupPill(
-                        name = "Tümü",
+                        name = Locales.getText(appLanguage, "all"),
                         isSelected = selectedGroupIdFilter == null,
                         color = colors.primary,
                         onClick = { selectedGroupIdFilter = null }
@@ -1303,7 +1304,7 @@ fun BrowserMainScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Bu grupta açık sekme bulunmuyor.",
+                            text = Locales.getText(appLanguage, "no_tabs_in_group"),
                             fontSize = 12.sp,
                             color = colors.onBackground.copy(alpha = 0.4f)
                         )
@@ -1337,7 +1338,7 @@ fun BrowserMainScreen(
                                         width = 1.dp,
                                         color = if (isCurrentActive) colors.primary else colors.tintBorder,
                                         shape = RoundedCornerShape(12.dp)
-                                    )
+                                      )
                                     .padding(vertical = 12.dp, horizontal = 14.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -1365,7 +1366,7 @@ fun BrowserMainScreen(
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
-                                        text = if (tab.url == "about:blank") "Boş Sayfa" else tab.url,
+                                        text = if (tab.url == "about:blank") Locales.getText(appLanguage, "blank_page") else tab.url,
                                         fontSize = 10.sp,
                                         color = colors.onBackground.copy(alpha = 0.45f),
                                         maxLines = 1,
@@ -1379,7 +1380,7 @@ fun BrowserMainScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
-                                        contentDescription = "Sekmeyi Kapat",
+                                        contentDescription = Locales.getText(appLanguage, "close_tab"),
                                         tint = colors.onBackground.copy(alpha = 0.5f),
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -1391,11 +1392,11 @@ fun BrowserMainScreen(
                                 AlertDialog(
                                     onDismissRequest = { showGroupAssignSheet = false },
                                     containerColor = colors.surface,
-                                    title = { Text("Gruba Kaydet", fontSize = 15.sp, fontWeight = FontWeight.Bold) },
+                                    title = { Text(Locales.getText(appLanguage, "save_to_group"), fontSize = 15.sp, fontWeight = FontWeight.Bold) },
                                     text = {
                                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                             Text(
-                                                text = "Bu sekmeyi kaydetmek istediğiniz kategoriyi seçin:",
+                                                text = Locales.getText(appLanguage, "select_group_for_tab"),
                                                 fontSize = 12.sp,
                                                 color = colors.onBackground.copy(alpha = 0.6f)
                                             )
@@ -1412,7 +1413,7 @@ fun BrowserMainScreen(
                                                     }
                                                     .padding(12.dp)
                                             ) {
-                                                Text("Hiçbiri", fontSize = 12.sp, color = colors.onBackground)
+                                                Text(Locales.getText(appLanguage, "none"), fontSize = 12.sp, color = colors.onBackground)
                                             }
                                             tabGroups.forEach { group ->
                                                 Row(
@@ -1441,7 +1442,7 @@ fun BrowserMainScreen(
                                     },
                                     confirmButton = {
                                         TextButton(onClick = { showGroupAssignSheet = false }) {
-                                            Text("Vazgeç", color = colors.primary)
+                                            Text(Locales.getText(appLanguage, "cancel"), color = colors.primary)
                                         }
                                     }
                                 )
@@ -1458,13 +1459,13 @@ fun BrowserMainScreen(
                     AlertDialog(
                         onDismissRequest = { showGroupCreateDialog = false },
                         containerColor = colors.surface,
-                        title = { Text("Yeni Sekme Grubu", fontSize = 15.sp, fontWeight = FontWeight.Bold) },
+                        title = { Text(Locales.getText(appLanguage, "new_tab_group"), fontSize = 15.sp, fontWeight = FontWeight.Bold) },
                         text = {
                             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                                 OutlinedTextField(
                                     value = newGroupName,
                                     onValueChange = { newGroupName = it },
-                                    label = { Text("Grup Adı") },
+                                    label = { Text(Locales.getText(appLanguage, "group_name")) },
                                     singleLine = true,
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = colors.primary,
@@ -1473,7 +1474,7 @@ fun BrowserMainScreen(
                                 )
 
                                 Column {
-                                    Text("Grup Rengi", fontSize = 12.sp, color = colors.onBackground.copy(alpha = 0.5f))
+                                    Text(Locales.getText(appLanguage, "group_color"), fontSize = 12.sp, color = colors.onBackground.copy(alpha = 0.5f))
                                     Spacer(modifier = Modifier.height(6.dp))
                                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         for (i in 0..4) {
@@ -1504,12 +1505,12 @@ fun BrowserMainScreen(
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
                             ) {
-                                Text("Oluştur", color = Color.White)
+                                Text(Locales.getText(appLanguage, "create"), color = Color.White)
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = { showGroupCreateDialog = false }) {
-                                Text("Vazgeç", color = colors.primary)
+                                Text(Locales.getText(appLanguage, "cancel"), color = colors.primary)
                             }
                         }
                     )
@@ -1536,7 +1537,7 @@ fun BrowserMainScreen(
                 var searchQ by remember { mutableStateOf("") }
 
                 Text(
-                    text = "Yer İmlerim",
+                    text = Locales.getText(appLanguage, "bookmarks"),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = colors.primary
@@ -1546,9 +1547,9 @@ fun BrowserMainScreen(
                 OutlinedTextField(
                     value = searchQ,
                     onValueChange = { searchQ = it },
-                    placeholder = { Text("Yer imlerinde ara...", fontSize = 12.sp) },
+                    placeholder = { Text(Locales.getText(appLanguage, "search_bookmarks_placeholder"), fontSize = 12.sp) },
                     modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = { Icon(Icons.Default.Search, "Ara") },
+                    leadingIcon = { Icon(Icons.Default.Search, Locales.getText(appLanguage, "search")) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = colors.primary,
@@ -1568,7 +1569,7 @@ fun BrowserMainScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (searchQ.isEmpty()) "Henüz kaydedilmiş yer imi yok." else "Aramayla eşleşen sonuç bulunamadı.",
+                            text = if (searchQ.isEmpty()) Locales.getText(appLanguage, "no_bookmarks_yet") else Locales.getText(appLanguage, "no_results_matched"),
                             fontSize = 12.sp,
                             color = colors.onBackground.copy(alpha = 0.4f)
                         )
@@ -1588,7 +1589,7 @@ fun BrowserMainScreen(
                                     .background(colors.background)
                                     .clickable {
                                         activeTab?.let { tab ->
-                                            viewModel.updateTabInfo(tab.id, "Yükleniyor...", bookmark.url)
+                                            viewModel.updateTabInfo(tab.id, Locales.getText(appLanguage, "loading"), bookmark.url)
                                         }
                                         activeWebView?.loadUrl(bookmark.url)
                                         showBookmarksSheet = false
@@ -1626,7 +1627,7 @@ fun BrowserMainScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Delete,
-                                        contentDescription = "Sil",
+                                        contentDescription = Locales.getText(appLanguage, "delete"),
                                         tint = colors.onBackground.copy(alpha = 0.4f),
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -1662,7 +1663,7 @@ fun BrowserMainScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Geçmiş",
+                        text = Locales.getText(appLanguage, "history"),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = colors.primary
@@ -1672,7 +1673,7 @@ fun BrowserMainScreen(
                         TextButton(
                             onClick = { viewModel.clearHistory() }
                         ) {
-                            Text("Tümünü Temizle", fontSize = 12.sp, color = colors.primary)
+                            Text(Locales.getText(appLanguage, "clear_all"), fontSize = 12.sp, color = colors.primary)
                         }
                     }
                 }
@@ -1680,9 +1681,9 @@ fun BrowserMainScreen(
                 OutlinedTextField(
                     value = searchQ,
                     onValueChange = { searchQ = it },
-                    placeholder = { Text("Geçmişte ara...", fontSize = 12.sp) },
+                    placeholder = { Text(Locales.getText(appLanguage, "search_history_placeholder"), fontSize = 12.sp) },
                     modifier = Modifier.fillMaxWidth(),
-                    leadingIcon = { Icon(Icons.Default.Search, "Ara") },
+                    leadingIcon = { Icon(Icons.Default.Search, Locales.getText(appLanguage, "search")) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = colors.primary,
@@ -1702,7 +1703,7 @@ fun BrowserMainScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (searchQ.isEmpty()) "Henüz tarama geçmişi bulunmuyor." else "Aramayla eşleşen geçmiş kaydı yok.",
+                            text = if (searchQ.isEmpty()) Locales.getText(appLanguage, "no_history_yet") else Locales.getText(appLanguage, "no_results_matched"),
                             fontSize = 12.sp,
                             color = colors.onBackground.copy(alpha = 0.4f)
                         )
@@ -1727,7 +1728,7 @@ fun BrowserMainScreen(
                                     .background(colors.background)
                                     .clickable {
                                         activeTab?.let { tab ->
-                                            viewModel.updateTabInfo(tab.id, "Yükleniyor...", hist.url)
+                                            viewModel.updateTabInfo(tab.id, Locales.getText(appLanguage, "loading"), hist.url)
                                         }
                                         activeWebView?.loadUrl(hist.url)
                                         showHistorySheet = false
@@ -1769,7 +1770,7 @@ fun BrowserMainScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Close,
-                                        contentDescription = "Kaydı Kapat",
+                                        contentDescription = Locales.getText(appLanguage, "delete"),
                                         tint = colors.onBackground.copy(alpha = 0.4f),
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -1798,7 +1799,7 @@ fun BrowserMainScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "İndirilen Dosyalar",
+                    text = Locales.getText(appLanguage, "downloads"),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = colors.primary
@@ -1812,7 +1813,7 @@ fun BrowserMainScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "Henüz indirilmiş bir dosya bulunmuyor.",
+                            text = Locales.getText(appLanguage, "no_downloads_yet"),
                             fontSize = 12.sp,
                             color = colors.onBackground.copy(alpha = 0.4f)
                         )
@@ -1843,9 +1844,9 @@ fun BrowserMainScreen(
                                                 setDataAndType(uri, dItem.mimeType)
                                                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                             }
-                                            context.startActivity(Intent.createChooser(intent, "Dosyayı Aç"))
+                                            context.startActivity(Intent.createChooser(intent, Locales.getText(appLanguage, "open_file")))
                                         } catch (e: Exception) {
-                                            Toast.makeText(context, "Dosya açılamadı, taşınmış veya silinmiş olabilir.", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, Locales.getText(appLanguage, "open_file_failed"), Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                     .padding(14.dp),
@@ -1853,7 +1854,7 @@ fun BrowserMainScreen(
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.ArrowDownward,
-                                    contentDescription = "Dosya",
+                                    contentDescription = Locales.getText(appLanguage, "file"),
                                     tint = colors.primary,
                                     modifier = Modifier.size(16.dp)
                                 )
@@ -1881,7 +1882,7 @@ fun BrowserMainScreen(
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.Delete,
-                                        contentDescription = "Kaydı Kaldır",
+                                        contentDescription = Locales.getText(appLanguage, "delete"),
                                         tint = colors.onBackground.copy(alpha = 0.4f),
                                         modifier = Modifier.size(16.dp)
                                     )
@@ -1917,7 +1918,7 @@ fun BrowserMainScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Eklentiler & Eklenti Motoru",
+                        text = Locales.getText(appLanguage, "extensions"),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = colors.primary
@@ -1929,12 +1930,12 @@ fun BrowserMainScreen(
                         shape = RoundedCornerShape(8.dp),
                         modifier = Modifier.height(32.dp)
                     ) {
-                        Text("Eklenti Yükle", fontSize = 11.sp, color = Color.White)
+                        Text(Locales.getText(appLanguage, "install_extension"), fontSize = 11.sp, color = Color.White)
                     }
                 }
 
                 Text(
-                    text = "Lesspecad, sayfa yüklendiğinde otomatik olarak özel JavaScript scriptleri enjekte edebilen yerleşik bir motora sahiptir.",
+                    text = Locales.getText(appLanguage, "extensions_desc"),
                     fontSize = 11.sp,
                     color = colors.onBackground.copy(alpha = 0.5f)
                 )
@@ -1960,7 +1961,7 @@ fun BrowserMainScreen(
                                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                         Icon(
                                             imageVector = Icons.Default.Build,
-                                            contentDescription = "Eklenti",
+                                            contentDescription = Locales.getText(appLanguage, "extension"),
                                             tint = colors.primary,
                                             modifier = Modifier.size(16.dp)
                                         )
@@ -1992,7 +1993,7 @@ fun BrowserMainScreen(
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                                         TextButton(onClick = { viewModel.deleteExtension(ext) }) {
-                                            Text("Sistemden Kaldır", fontSize = 11.sp, color = colors.primary)
+                                            Text(Locales.getText(appLanguage, "uninstall"), fontSize = 11.sp, color = colors.primary)
                                         }
                                     }
                                 }
@@ -2009,32 +2010,32 @@ fun BrowserMainScreen(
                     AlertDialog(
                         onDismissRequest = { showAddExtensionDialog = false },
                         containerColor = colors.surface,
-                        title = { Text("Eklenti Oluştur", fontSize = 15.sp, fontWeight = FontWeight.Bold) },
+                        title = { Text(Locales.getText(appLanguage, "create_extension"), fontSize = 15.sp, fontWeight = FontWeight.Bold) },
                         text = {
                             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                                 Text(
-                                    text = "Yüklenecek JS kodunu ve eklenti açıklamalarını tanımlayın:",
+                                    text = Locales.getText(appLanguage, "define_extension_desc"),
                                     fontSize = 11.sp,
                                     color = colors.onBackground.copy(alpha = 0.5f)
                                 )
                                 OutlinedTextField(
                                     value = extName,
                                     onValueChange = { extName = it },
-                                    label = { Text("Eklenti Adı", fontSize = 11.sp) },
+                                    label = { Text(Locales.getText(appLanguage, "extension_name"), fontSize = 11.sp) },
                                     singleLine = true,
                                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
                                 )
                                 OutlinedTextField(
                                     value = extDesc,
                                     onValueChange = { extDesc = it },
-                                    label = { Text("Eklenti Açıklaması", fontSize = 11.sp) },
+                                    label = { Text(Locales.getText(appLanguage, "extension_title"), fontSize = 11.sp) },
                                     singleLine = true,
                                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
                                 )
                                 OutlinedTextField(
                                     value = extJs,
                                     onValueChange = { extJs = it },
-                                    label = { Text("JavaScript Kodu (evaluateJs)", fontSize = 11.sp) },
+                                    label = { Text(Locales.getText(appLanguage, "js_code"), fontSize = 11.sp) },
                                     placeholder = { Text("javascript:(function(){ ... })();") },
                                     maxLines = 5,
                                     colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
@@ -2051,12 +2052,12 @@ fun BrowserMainScreen(
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = colors.primary)
                             ) {
-                                Text("Doğrula & Yükle", color = Color.White)
+                                Text(Locales.getText(appLanguage, "validate_install"), color = Color.White)
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = { showAddExtensionDialog = false }) {
-                                Text("Vazgeç", color = colors.primary)
+                                Text(Locales.getText(appLanguage, "cancel"), color = colors.primary)
                             }
                         }
                     )
@@ -2083,14 +2084,14 @@ fun BrowserMainScreen(
                 var syncPayload by remember { mutableStateOf("") }
 
                 Text(
-                    text = "Lesspecad Bulutsuz Veri Eşitleme",
+                    text = Locales.getText(appLanguage, "sync_title"),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = colors.primary
                 )
 
                 Text(
-                    text = "Yer imleriniz, arama geçmişiniz, ayarlamalarınız ve yüklü olan tüm eklenti verileriniz tek bir transfer koduna sıkıştırılır. İnternet sunucularına veri yüklemeden, kopyaladığınız kodu başka Lesspecad paneline yapıştırarak anında eşitleme sağlayabilirsiniz.",
+                    text = Locales.getText(appLanguage, "sync_desc"),
                     fontSize = 11.sp,
                     color = colors.onBackground.copy(alpha = 0.5f)
                 )
@@ -2106,7 +2107,7 @@ fun BrowserMainScreen(
                                 val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                 val clip = ClipData.newPlainText("Lesspecad Sync Code", payload)
                                 clipboard.setPrimaryClip(clip)
-                                Toast.makeText(context, "Eşitleme transfer kodu panoya kopyalandı!", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, Locales.getText(appLanguage, "sync_copied"), Toast.LENGTH_SHORT).show()
                             }
                         },
                         modifier = Modifier.weight(1f),
@@ -2115,7 +2116,7 @@ fun BrowserMainScreen(
                     ) {
                         Icon(Icons.Default.ContentCopy, "Kopya", modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Yedek Kodu Al", fontSize = 11.sp, color = Color.White)
+                        Text(Locales.getText(appLanguage, "get_backup_code"), fontSize = 11.sp, color = Color.White)
                     }
                 }
 
@@ -2123,7 +2124,7 @@ fun BrowserMainScreen(
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = "Transfer Kodu İçe Aktar",
+                        text = Locales.getText(appLanguage, "import_backup"),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = colors.onBackground
@@ -2134,7 +2135,7 @@ fun BrowserMainScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(110.dp),
-                        placeholder = { Text("Lesspecad JSON transfer kodunu buraya yapıştırın...", fontSize = 11.sp) },
+                        placeholder = { Text(Locales.getText(appLanguage, "paste_sync_code"), fontSize = 11.sp) },
                         maxLines = 6,
                         colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = colors.primary)
                     )
@@ -2144,11 +2145,11 @@ fun BrowserMainScreen(
                                 viewModel.importBackup(
                                     syncPayload,
                                     onSuccess = {
-                                        Toast.makeText(context, "Eşitleme işlemi tamamlandı! Tüm verileriniz senkronize edildi.", Toast.LENGTH_LONG).show()
+                                        Toast.makeText(context, Locales.getText(appLanguage, "sync_done"), Toast.LENGTH_LONG).show()
                                         showSyncSheet = false
                                     },
                                     onError = {
-                                        Toast.makeText(context, "Desteklenmeyen veya hatalı transfer kodu yapıştırıldı.", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, Locales.getText(appLanguage, "sync_failed"), Toast.LENGTH_SHORT).show()
                                     }
                                 )
                             }
@@ -2159,7 +2160,7 @@ fun BrowserMainScreen(
                     ) {
                         Icon(Icons.Default.CloudDownload, "Aktar", modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Doğrula ve Eşitle", fontSize = 11.sp, color = Color.White)
+                        Text(Locales.getText(appLanguage, "validate_sync"), fontSize = 11.sp, color = Color.White)
                     }
                 }
             }
@@ -2402,6 +2403,7 @@ fun LocalDashboard(
     val bookmarks by viewModel.bookmarks.collectAsStateWithLifecycle()
     val history by viewModel.history.collectAsStateWithLifecycle()
     val extensions by viewModel.extensions.collectAsStateWithLifecycle()
+    val appLanguage by viewModel.appLanguage.collectAsStateWithLifecycle()
 
     // Real-time dynamic clock tracking matching Ankara/Istanbul (UTC/Local)
     var formattedTime by remember { mutableStateOf("") }
@@ -2491,8 +2493,13 @@ fun LocalDashboard(
                     decorationBox = { innerTextField ->
                         Box(contentAlignment = Alignment.CenterStart) {
                             if (searchQueryLocal.isEmpty()) {
+                                val label = if (appLanguage == "en") {
+                                    "${Locales.getText(appLanguage, "search_the_web_with")} ${viewModel.searchEngine.value}..."
+                                } else {
+                                    "${viewModel.searchEngine.value} ${Locales.getText(appLanguage, "search_the_web_with")}"
+                                }
                                 Text(
-                                    text = "${viewModel.searchEngine.value} ile internette ara...",
+                                    text = label,
                                     fontSize = 13.sp,
                                     color = colors.onBackground.copy(alpha = 0.35f)
                                 )
@@ -2510,7 +2517,7 @@ fun LocalDashboard(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "Hızlı Erişim",
+                        text = Locales.getText(appLanguage, "quick_access"),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = colors.onBackground.copy(alpha = 0.5f),
@@ -2567,9 +2574,9 @@ fun LocalDashboard(
                         .padding(18.dp),
                     horizontalArrangement = Arrangement.SpaceAround
                 ) {
-                    DashboardStatCol("Yer İmi", bookmarks.size.toString(), colors)
-                    DashboardStatCol("Geçmiş", history.size.toString(), colors)
-                    DashboardStatCol("Eklentiler", extensions.filter { it.isEnabled }.size.toString(), colors)
+                    DashboardStatCol(Locales.getText(appLanguage, "bookmark"), bookmarks.size.toString(), colors)
+                    DashboardStatCol(Locales.getText(appLanguage, "history"), history.size.toString(), colors)
+                    DashboardStatCol(Locales.getText(appLanguage, "extensions"), extensions.filter { it.isEnabled }.size.toString(), colors)
                 }
             }
         }
@@ -2595,7 +2602,8 @@ fun ReadingModeReader(
     title: String,
     content: String,
     onDismiss: () -> Unit,
-    colors: LesspecadColorScheme
+    colors: LesspecadColorScheme,
+    appLanguage: String = "tr"
 ) {
     var fontSize by remember { mutableStateOf(16f) }
     var fontSerif by remember { mutableStateOf(true) }
@@ -2622,7 +2630,7 @@ fun ReadingModeReader(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 IconButton(onClick = onDismiss) {
-                    Icon(imageVector = Icons.Default.Close, contentDescription = "Kapat", tint = readerText)
+                    Icon(imageVector = Icons.Default.Close, contentDescription = Locales.getText(appLanguage, "close"), tint = readerText)
                 }
 
                 Row(
@@ -2652,7 +2660,7 @@ fun ReadingModeReader(
                     ) {
                         Icon(
                             imageVector = if (fontSerif) Icons.Default.FontDownload else Icons.Default.TextFields,
-                            contentDescription = "Font Değiştir",
+                            contentDescription = Locales.getText(appLanguage, "change_font"),
                             tint = readerText
                         )
                     }
