@@ -30,7 +30,9 @@ abstract class BrowserDatabase : RoomDatabase() {
                     context.applicationContext,
                     BrowserDatabase::class.java,
                     "lesspecad_browser_db"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }
