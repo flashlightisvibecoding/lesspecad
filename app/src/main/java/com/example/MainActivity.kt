@@ -16,6 +16,7 @@ import android.webkit.*
 import android.widget.Toast
 import kotlinx.coroutines.launch
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -677,6 +678,27 @@ fun BrowserMainScreen(
         }
     }
 
+    // Support physical/gesture back button to navigate backwards in the WebView history instead of exiting
+    BackHandler(enabled = canGoBack) {
+        activeWebView?.goBack()
+    }
+
+    // Synchronize webViewPool with the actual list of open tabs to prevent memory leaks and Out-of-Memory app crashes
+    LaunchedEffect(tabs) {
+        val activeIds = tabs.map { it.id }.toSet()
+        val pooledIds = webViewPool.keys.toList()
+        for (id in pooledIds) {
+            if (id !in activeIds) {
+                webViewPool.remove(id)?.let { webView ->
+                    (webView.parent as? ViewGroup)?.removeView(webView)
+                    webView.stopLoading()
+                    webView.clearHistory()
+                    webView.destroy()
+                }
+            }
+        }
+    }
+
     // Configure Cookies depending on incognito / privacy tabs settings
     LaunchedEffect(activeTab?.isIncognito, privacyEnabled) {
         val cookieManager = CookieManager.getInstance()
@@ -998,15 +1020,15 @@ fun BrowserMainScreen(
                 )
             } else {
                 val currentTabId = activeTab?.id
-                if (currentTabId != null) {
+                if (currentTabId != null && activeWebView != null) {
                     key(currentTabId) {
-                        val webView = webViewPool[currentTabId]
-                        if (webView != null) {
-                            AndroidView(
-                                factory = { webView },
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
+                        AndroidView(
+                            factory = {
+                                (activeWebView.parent as? ViewGroup)?.removeView(activeWebView)
+                                activeWebView
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
                     }
                 }
             }
