@@ -90,6 +90,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        // Prepositively create WebView cache directories to prevent chromium opendir warnings/errors
+        try {
+            val webViewCacheDir = File(cacheDir, "WebView/Default/HTTP Cache/Code Cache")
+            File(webViewCacheDir, "js").mkdirs()
+            File(webViewCacheDir, "wasm").mkdirs()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
         setContent {
             val isOnboardingCompleted by viewModel.isOnboardingCompleted.collectAsStateWithLifecycle()
             val accentColorName by viewModel.accentColorName.collectAsStateWithLifecycle()
@@ -621,13 +630,17 @@ fun BrowserMainScreen(
                             view: WebView?,
                             request: WebResourceRequest?
                         ): WebResourceResponse? {
-                            val reqUrl = request?.url?.toString() ?: return null
-                            if (adBlockEnabled && isAdUrl(reqUrl)) {
-                                return WebResourceResponse(
-                                    "text/plain",
-                                    "utf-8",
-                                    ByteArrayInputStream(ByteArray(0))
-                                )
+                            try {
+                                val reqUrl = request?.url?.toString() ?: return null
+                                if (viewModel.adBlockEnabled.value && isAdUrl(reqUrl)) {
+                                    return WebResourceResponse(
+                                        "text/plain",
+                                        "utf-8",
+                                        ByteArrayInputStream(ByteArray(0))
+                                    )
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
                             }
                             return super.shouldInterceptRequest(view, request)
                         }
@@ -656,14 +669,16 @@ fun BrowserMainScreen(
                                 if (it != "about:blank") {
                                     inputUrl = TextFieldValue(text = it)
                                     // Register history visit if not in Custom Incognito tab
-                                    val incog = activeTab.isIncognito || privacyEnabled
+                                    val specificTab = viewModel.tabs.value.find { it.id == key }
+                                    val isIncogTab = specificTab?.isIncognito ?: false
+                                    val incog = isIncogTab || viewModel.privacyEnabled.value
                                     if (!incog) {
                                         viewModel.registerVisit(cleanTitle, it)
                                     }
                                 }
 
                                 // Native Javascript Extensions payload injections
-                                extensions.forEach { ext ->
+                                viewModel.extensions.value.forEach { ext ->
                                     if (ext.isEnabled) {
                                         view?.evaluateJavascript(ext.jsCode, null)
                                     }
