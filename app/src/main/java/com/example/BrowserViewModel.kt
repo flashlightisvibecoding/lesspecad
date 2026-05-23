@@ -51,6 +51,9 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private val _privacyEnabled = MutableStateFlow(repository.isPrivacyEnabled)
     val privacyEnabled: StateFlow<Boolean> = _privacyEnabled.asStateFlow()
 
+    private val _appLanguage = MutableStateFlow(repository.appLanguage)
+    val appLanguage: StateFlow<String> = _appLanguage.asStateFlow()
+
     // Dialog & Reader UI states
     private val _currentReaderContent = MutableStateFlow<String?>(null)
     val currentReaderContent: StateFlow<String?> = _currentReaderContent.asStateFlow()
@@ -85,20 +88,27 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Actions ---
 
-    fun completeOnboarding(engine: String, accent: String, blockAds: Boolean, incognitoDefault: Boolean) {
+    fun completeOnboarding(engine: String, accent: String, blockAds: Boolean, incognitoDefault: Boolean, lang: String) {
         viewModelScope.launch {
             repository.defaultSearchEngine = engine
             repository.accentColorName = accent
             repository.isAdBlockEnabled = blockAds
             repository.isPrivacyEnabled = incognitoDefault
+            repository.appLanguage = lang
             repository.isOnboardingCompleted = true
 
             _searchEngine.value = engine
             _accentColorName.value = accent
             _adBlockEnabled.value = blockAds
             _privacyEnabled.value = incognitoDefault
+            _appLanguage.value = lang
             _isOnboardingCompleted.value = true
         }
+    }
+
+    fun setAppLanguage(lang: String) {
+        repository.appLanguage = lang
+        _appLanguage.value = lang
     }
 
     fun setAdBlockEnabled(enabled: Boolean) {
@@ -176,9 +186,15 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     fun createNewTab(url: String = "about:blank", isIncognito: Boolean = false, groupId: String? = null) {
         viewModelScope.launch {
             val id = UUID.randomUUID().toString()
+            val isTr = repository.appLanguage == "tr"
+            val defaultTitle = if (url == "about:blank") {
+                if (isTr) "Yeni Sekme" else "New Tab"
+            } else {
+                if (isTr) "Yükleniyor..." else "Loading..."
+            }
             val newTab = TabItem(
                 id = id,
-                title = if (url == "about:blank") "Yeni Sekme" else "Yükleniyor...",
+                title = defaultTitle,
                 url = url,
                 groupId = groupId,
                 isActive = true,

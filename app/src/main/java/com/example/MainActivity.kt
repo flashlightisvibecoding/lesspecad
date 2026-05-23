@@ -112,8 +112,8 @@ class MainActivity : ComponentActivity() {
                 ) {
                     if (!isOnboardingCompleted) {
                         OnboardingScreen(
-                            onComplete = { engine, accent, ads, incog ->
-                                viewModel.completeOnboarding(engine, accent, ads, incog)
+                            onComplete = { engine, accent, ads, incog, lang ->
+                                viewModel.completeOnboarding(engine, accent, ads, incog, lang)
                             },
                             colors = themeColors
                         )
@@ -224,9 +224,10 @@ fun getGroupDotColor(index: Int): Color {
 // --- 1. Onboarding Screen ---
 @Composable
 fun OnboardingScreen(
-    onComplete: (String, String, Boolean, Boolean) -> Unit,
+    onComplete: (String, String, Boolean, Boolean, String) -> Unit,
     colors: LesspecadColorScheme
 ) {
+    var appLanguage by remember { mutableStateOf(if (java.util.Locale.getDefault().language == "tr") "tr" else "en") }
     var searchEngine by remember { mutableStateOf("DuckDuckGo") }
     var accentColor by remember { mutableStateOf("Natural") }
     var blockAds by remember { mutableStateOf(true) }
@@ -284,7 +285,7 @@ fun OnboardingScreen(
                 horizontalAlignment = Alignment.Start
             ) {
                 Text(
-                    text = "Merhaba.",
+                    text = Locales.getText(appLanguage, "welcome"),
                     fontSize = 32.sp,
                     fontWeight = FontWeight.Light,
                     color = currentDemoColors.onBackground,
@@ -292,7 +293,7 @@ fun OnboardingScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Tarayıcınızı sadece ihtiyacınız olanlarla donatın. Ultra sade, tamamen sizin.",
+                    text = Locales.getText(appLanguage, "onboarding_sub"),
                     fontSize = 14.sp,
                     color = currentDemoColors.onBackground.copy(alpha = 0.7f),
                     lineHeight = 20.sp
@@ -311,10 +312,53 @@ fun OnboardingScreen(
                     modifier = Modifier.padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
+                    // Language Selection Section
+                    Column {
+                        Text(
+                            text = Locales.getText(appLanguage, "select_language"),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = currentDemoColors.onBackground.copy(alpha = 0.7f),
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf("en" to "English", "tr" to "Türkçe").forEach { (code, name) ->
+                                val selected = appLanguage == code
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (selected) currentDemoColors.primary else currentDemoColors.background)
+                                        .clickable { appLanguage = code }
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (selected) Color.Transparent else currentDemoColors.tintBorder,
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .padding(vertical = 10.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = name,
+                                        fontSize = 11.sp,
+                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (selected) Color.White else currentDemoColors.onBackground
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Divider(color = currentDemoColors.tintBorder, thickness = 0.5.dp)
+
                     // Search Engine Selection
                     Column {
                         Text(
-                            text = "Varsayılan Arama Motoru",
+                            text = Locales.getText(appLanguage, "default_search_engine"),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = currentDemoColors.onBackground.copy(alpha = 0.7f),
@@ -356,7 +400,7 @@ fun OnboardingScreen(
                     // Theme Accent Selector
                     Column {
                         Text(
-                            text = "Renk Paleti",
+                            text = Locales.getText(appLanguage, "color_palette"),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = currentDemoColors.onBackground.copy(alpha = 0.7f),
@@ -393,7 +437,7 @@ fun OnboardingScreen(
                                     if (selected) {
                                         Icon(
                                             imageVector = Icons.Default.Check,
-                                            contentDescription = "Seçildi",
+                                            contentDescription = "Selected",
                                             tint = Color.White,
                                             modifier = Modifier.size(16.dp)
                                         )
@@ -413,13 +457,13 @@ fun OnboardingScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Reklam Engelleyici",
+                                text = Locales.getText(appLanguage, "ad_blocker"),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = currentDemoColors.onBackground
                             )
                             Text(
-                                text = "Web sitelerindeki reklamları ve izleyicileri otomatik engeller.",
+                                text = Locales.getText(appLanguage, "ad_blocker_sub"),
                                 fontSize = 10.sp,
                                 color = currentDemoColors.onBackground.copy(alpha = 0.5f)
                             )
@@ -442,13 +486,13 @@ fun OnboardingScreen(
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Her Zaman Gizli Mod",
+                                text = Locales.getText(appLanguage, "always_incognito"),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = currentDemoColors.onBackground
                             )
                             Text(
-                                text = "Uygulama her açıldığında varsayılan olarak gizli modda başlar.",
+                                text = Locales.getText(appLanguage, "always_incognito_sub"),
                                 fontSize = 10.sp,
                                 color = currentDemoColors.onBackground.copy(alpha = 0.5f)
                             )
@@ -467,7 +511,7 @@ fun OnboardingScreen(
 
             // Launch Button
             Button(
-                onClick = { onComplete(searchEngine, accentColor, blockAds, incognitoByDefault) },
+                onClick = { onComplete(searchEngine, accentColor, blockAds, incognitoByDefault, appLanguage) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp)
@@ -476,7 +520,7 @@ fun OnboardingScreen(
                 shape = CircleShape
             ) {
                 Text(
-                    text = "Gezinmeye Başla",
+                    text = Locales.getText(appLanguage, "start_browsing"),
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Medium,
                     color = Color.White,
@@ -511,6 +555,7 @@ fun BrowserMainScreen(
     val searchEngine by viewModel.searchEngine.collectAsStateWithLifecycle()
     val adBlockEnabled by viewModel.adBlockEnabled.collectAsStateWithLifecycle()
     val privacyEnabled by viewModel.privacyEnabled.collectAsStateWithLifecycle()
+    val appLanguage by viewModel.appLanguage.collectAsStateWithLifecycle()
 
     val currentReaderTitle by viewModel.currentReaderTitle.collectAsStateWithLifecycle()
     val currentReaderContent by viewModel.currentReaderContent.collectAsStateWithLifecycle()
@@ -1078,7 +1123,7 @@ fun BrowserMainScreen(
                 ) {
                     item {
                         MenuGridButton(
-                            label = "Yer İmleri",
+                            label = Locales.getText(appLanguage, "bookmarks"),
                             icon = Icons.Default.Star,
                             onClick = {
                                 showMenuSheet = false
@@ -1089,7 +1134,7 @@ fun BrowserMainScreen(
                     }
                     item {
                         MenuGridButton(
-                            label = "Geçmiş",
+                            label = Locales.getText(appLanguage, "history"),
                             icon = Icons.Default.Refresh,
                             onClick = {
                                 showMenuSheet = false
@@ -1100,7 +1145,7 @@ fun BrowserMainScreen(
                     }
                     item {
                         MenuGridButton(
-                            label = "İndirilenler",
+                            label = Locales.getText(appLanguage, "downloads"),
                             icon = Icons.Default.ArrowDownward,
                             onClick = {
                                 showMenuSheet = false
@@ -1111,7 +1156,7 @@ fun BrowserMainScreen(
                     }
                     item {
                         MenuGridButton(
-                            label = "Eklentiler",
+                            label = Locales.getText(appLanguage, "extensions"),
                             icon = Icons.Default.Extension,
                             onClick = {
                                 showMenuSheet = false
@@ -1122,7 +1167,7 @@ fun BrowserMainScreen(
                     }
                     item {
                         MenuGridButton(
-                            label = "Bulutsuz Eşitleme",
+                            label = Locales.getText(appLanguage, "backup_sync"),
                             icon = Icons.Default.Share,
                             onClick = {
                                 showMenuSheet = false
@@ -1133,7 +1178,7 @@ fun BrowserMainScreen(
                     }
                     item {
                         MenuGridButton(
-                            label = "Ayarlar",
+                            label = Locales.getText(appLanguage, "settings"),
                             icon = Icons.Default.Settings,
                             onClick = {
                                 showMenuSheet = false
@@ -1148,14 +1193,14 @@ fun BrowserMainScreen(
 
                 // Inline fast-action switches for core blocks
                 OptionInlineSwitch(
-                    title = "Reklam Engelleyici",
+                    title = Locales.getText(appLanguage, "ad_blocker"),
                     checked = adBlockEnabled,
                     onCheckedChange = { viewModel.setAdBlockEnabled(it) },
                     colors = colors
                 )
 
                 OptionInlineSwitch(
-                    title = "Gizlilik ve Takip Önleme",
+                    title = Locales.getText(appLanguage, "always_incognito"),
                     checked = privacyEnabled,
                     onCheckedChange = { viewModel.setPrivacyEnabled(it) },
                     colors = colors
@@ -2137,7 +2182,7 @@ fun BrowserMainScreen(
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 Text(
-                    text = "Arayüz Ayarları",
+                    text = Locales.getText(appLanguage, "interface_settings"),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = colors.primary
@@ -2145,7 +2190,12 @@ fun BrowserMainScreen(
 
                 // Search Engine selector
                 Column {
-                    Text("Arama Motoru Seçeneği", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground.copy(alpha = 0.6f))
+                    Text(
+                        text = Locales.getText(appLanguage, "search_engine_option"),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.onBackground.copy(alpha = 0.6f)
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         val items = listOf("Google", "DuckDuckGo", "Bing", "Ecosia")
@@ -2171,7 +2221,12 @@ fun BrowserMainScreen(
 
                 // Accent Theme Selector
                 Column {
-                    Text("Arayüz Renk Tonu", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = colors.onBackground.copy(alpha = 0.6f))
+                    Text(
+                        text = Locales.getText(appLanguage, "interface_accent"),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.onBackground.copy(alpha = 0.6f)
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -2202,6 +2257,43 @@ fun BrowserMainScreen(
                                 if (isSel) {
                                     Icon(Icons.Default.Check, "X", tint = Color.White, modifier = Modifier.size(16.dp))
                                 }
+                            }
+                        }
+                    }
+                }
+
+                Divider(color = colors.tintBorder, thickness = 0.5.dp)
+
+                // Language Selector
+                Column {
+                    Text(
+                        text = Locales.getText(appLanguage, "app_language"),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.onBackground.copy(alpha = 0.6f)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf("en" to "English", "tr" to "Türkçe").forEach { (code, name) ->
+                            val isSel = appLanguage == code
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSel) colors.primary else colors.background)
+                                    .border(1.dp, if (isSel) Color.Transparent else colors.tintBorder, RoundedCornerShape(8.dp))
+                                    .clickable { viewModel.setAppLanguage(code) }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = name,
+                                    fontSize = 11.sp,
+                                    color = if (isSel) Color.White else colors.onBackground
+                                )
                             }
                         }
                     }

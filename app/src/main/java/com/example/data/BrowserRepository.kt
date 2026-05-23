@@ -56,6 +56,10 @@ class BrowserRepository(
     suspend fun deleteDownload(download: DownloadItem) = browserDao.deleteDownload(download)
 
     // --- Shared Preferences Settings ---
+    var appLanguage: String
+        get() = prefs.getString("app_language", if (java.util.Locale.getDefault().language == "tr") "tr" else "en") ?: "en"
+        set(value) = prefs.edit().putString("app_language", value).apply()
+
     var isOnboardingCompleted: Boolean
         get() = prefs.getBoolean("onboarding_completed", false)
         set(value) = prefs.edit().putBoolean("onboarding_completed", value).apply()
