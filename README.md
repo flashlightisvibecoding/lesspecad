@@ -64,8 +64,8 @@ This browser implements industry-standard **MVVM (Model-View-ViewModel)** archit
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/lesspecad/browser.git
-   cd browser
+   git clone https://github.com/flisvibing/lesspecad.git
+   cd lesspecad
    ```
 
 2. **Assemble the Android Debug APK:**
