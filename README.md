@@ -64,8 +64,8 @@ This browser implements industry-standard **MVVM (Model-View-ViewModel)** archit
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/lesspecad/browser.git
-   cd browser
+   git clone https://github.com/flisvibing/lesspecad.git
+   cd lesspecad
    ```
 
 2. **Assemble the Android Debug APK:**
@@ -86,7 +86,7 @@ This browser implements industry-standard **MVVM (Model-View-ViewModel)** archit
 ---
 
 ### License
-This project is licensed under the **ISC License**.
+This project is licensed under the **Mozilla Public License 2.0 (MPL 2.0)**. See the [LICENSE](LICENSE) file for details.
 
 ---
 
@@ -141,8 +141,8 @@ Uygulama, Android ekosisteminin en güncel ve kararlı pratiklerine uygun olarak
 
 1. **Depoyu klonlayın:**
    ```bash
-   git clone https://github.com/lesspecad/browser.git
-   cd browser
+   git clone https://github.com/flisvibing/lesspecad.git
+   cd lesspecad
    ```
 
 2. **Geliştirici (Debug) APK Dosyasını Derleyin:**
@@ -163,7 +163,7 @@ Uygulama, Android ekosisteminin en güncel ve kararlı pratiklerine uygun olarak
 ---
 
 ### Lisans
-Bu proje **ISC Lisansı** altında lisanslanmıştır.
+Bu proje **Mozilla Kamu Lisansı 2.0 (MPL 2.0)** altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına göz atabilirsiniz.
 
 ---
 

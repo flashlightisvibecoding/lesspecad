@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
@@ -546,6 +547,7 @@ fun BrowserMainScreen(
 ) {
     val context = LocalContext.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
     val coroutineScope = rememberCoroutineScope()
 
     val tabs by viewModel.tabs.collectAsStateWithLifecycle()
@@ -572,6 +574,7 @@ fun BrowserMainScreen(
     var canGoBack by remember { mutableStateOf(false) }
     var canGoForward by remember { mutableStateOf(false) }
     var isCurrentBookmarked by remember { mutableStateOf(false) }
+    var webViewGeneration by remember { mutableStateOf(0) }
 
     // Active bottom sheets
     var showMenuSheet by remember { mutableStateOf(false) }
@@ -597,8 +600,45 @@ fun BrowserMainScreen(
         }
     }
 
+    // Clear focus and hide keyboard when switching tabs or opening bottom sheets
+    LaunchedEffect(
+        activeTabId,
+        showMenuSheet,
+        showTabsSheet,
+        showBookmarksSheet,
+        showHistorySheet,
+        showDownloadsSheet,
+        showExtensionsSheet,
+        showSyncSheet,
+        showSettingsSheet
+    ) {
+        if (showMenuSheet || showTabsSheet || showBookmarksSheet || showHistorySheet || showDownloadsSheet || showExtensionsSheet || showSyncSheet || showSettingsSheet) {
+            try {
+                focusManager.clearFocus()
+                keyboardController?.hide()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    // Optimize active/inactive WebViews inside the webViewPool to conserve resources and cleanly shut down background input networks
+    LaunchedEffect(activeTab?.id) {
+        try {
+            webViewPool.forEach { (id, webView) ->
+                if (id == activeTab?.id) {
+                    webView.onResume()
+                } else {
+                    webView.onPause()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     // Retreiving the actual WebView for the active tab context
-    val activeWebView = remember(activeTab?.id) {
+    val activeWebView = remember(activeTab?.id, webViewGeneration) {
         val key = activeTab?.id
         if (key != null) {
             webViewPool.getOrPut(key) {
@@ -625,13 +665,20 @@ fun BrowserMainScreen(
                             view: WebView?,
                             detail: RenderProcessGoneDetail?
                         ): Boolean {
-                            try {
-                                view?.let { webView ->
-                                    (webView.parent as? ViewGroup)?.removeView(webView)
+                            val webView = view ?: return true
+                            // Post to the main thread's message queue to safely dispose of the dead WebView
+                            Handler(Looper.getMainLooper()).post {
+                                try {
+                                    val parentView = webView.parent as? ViewGroup
+                                    parentView?.removeView(webView)
+                                    if (key != null) {
+                                        webViewPool.remove(key)
+                                        webViewGeneration++
+                                    }
                                     webView.destroy()
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
                                 }
-                            } catch (e: Exception) {
-                                e.printStackTrace()
                             }
                             return true // Handled smoothly so the parent app continues running safely
                         }
@@ -1097,7 +1144,14 @@ fun BrowserMainScreen(
                                 (activeWebView.parent as? ViewGroup)?.removeView(activeWebView)
                                 activeWebView
                             },
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
+                            onRelease = { view ->
+                                try {
+                                    (view.parent as? ViewGroup)?.removeView(view)
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
                         )
                     }
                 }
