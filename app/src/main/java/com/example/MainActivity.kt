@@ -21,6 +21,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.*
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -30,6 +31,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -266,20 +268,13 @@ fun OnboardingScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Box(
+                Image(
+                    painter = painterResource(id = R.drawable.app_logo_1779621903831),
+                    contentDescription = "Lesspecad Logo",
                     modifier = Modifier
                         .size(36.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(currentDemoColors.primary),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "L",
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
+                )
                 Text(
                     text = "Lesspecad",
                     fontSize = 20.sp,
@@ -626,6 +621,21 @@ fun BrowserMainScreen(
 
                     // Built-in Ad-Block mechanism via WebResourceRequest interceptor
                     webViewClient = object : WebViewClient() {
+                        override fun onRenderProcessGone(
+                            view: WebView?,
+                            detail: RenderProcessGoneDetail?
+                        ): Boolean {
+                            try {
+                                view?.let { webView ->
+                                    (webView.parent as? ViewGroup)?.removeView(webView)
+                                    webView.destroy()
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                            return true // Handled smoothly so the parent app continues running safely
+                        }
+
                         override fun shouldInterceptRequest(
                             view: WebView?,
                             request: WebResourceRequest?
