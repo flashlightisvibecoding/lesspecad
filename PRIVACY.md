@@ -10,12 +10,13 @@ If anything here is unclear or you spot a discrepancy between this document and 
 
 ## TL;DR
 
-- ❌ No analytics, no telemetry, no crash reporting sent off-device.
-- ❌ No accounts. No sign-up. No cloud sync.
-- ❌ No advertising SDKs.
-- ✅ All your data (bookmarks, history, tabs, settings) stays in a local SQLite database on your device.
-- ✅ The only network connections Lesspecad makes are the ones **you** initiate by opening a website or running a search.
-- ✅ Backup and "sync" happen via a manually-exported JSON file you control — never through our servers (we don't have any).
+- No analytics, no telemetry, no crash reporting sent off-device.
+- No accounts. No sign-up. No cloud sync.
+- No advertising SDKs.
+- All your data (bookmarks, history, tabs, settings) stays in a local SQLite database on your device.
+- The only network connections Lesspecad makes are the ones **you** initiate by opening a website or running a search.
+- The built-in ad blocker works fully offline — no list-update requests are made over the network.
+- Backup and "sync" happen via a manually-exported JSON file you control — never through our servers (we don't have any).
 
 ---
 
@@ -40,12 +41,12 @@ You can delete any of this at any time from the in-app settings, or by clearing 
 
 ## 2. What data Lesspecad does **not** collect
 
-- ❌ No analytics or usage statistics
-- ❌ No crash reports sent to remote servers
-- ❌ No device identifiers (advertising ID, IMEI, MAC, etc.)
-- ❌ No location data
-- ❌ No contacts, calendar, microphone, or camera access
-- ❌ No account or login system
+- No analytics or usage statistics
+- No crash reports sent to remote servers
+- No device identifiers (advertising ID, IMEI, MAC, etc.)
+- No location data
+- No contacts, calendar, microphone, or camera access
+- No account or login system
 
 We don't operate any backend servers that collect data from the app. There is nowhere for us to send your data to, even if we wanted to.
 
@@ -75,6 +76,8 @@ The **only** network requests the app makes are those caused by your direct acti
 1. **Loading a webpage** — when you tap a link or enter a URL, the WebView fetches that page. Lesspecad does not add any extra requests to your browsing.
 2. **Search queries** — when you type into the address bar, the query is sent to your selected search engine.
 
+Lesspecad does **not** phone home, check for updates over the network, fetch remote configuration, or update its ad-blocking lists from the internet. Everything outside the two cases above is offline.
+
 ### Search engines
 
 The default search engine is **DuckDuckGo**. You can change it from settings to one of:
@@ -84,21 +87,35 @@ The default search engine is **DuckDuckGo**. You can change it from settings to 
 - Bing
 - Ecosia
 
-Once you pick a search engine, Lesspecad sends your queries directly to that provider over HTTPS. Each of these providers has its own privacy policy — Lesspecad has no insight into and no control over what they do with your queries. If privacy matters to you, DuckDuckGo or Ecosia are generally the friendly choices.
+Once you pick a search engine, Lesspecad sends your queries directly to that provider over HTTPS. Each of these providers has its own privacy policy — Lesspecad has no insight into and no control over what they do with your queries. If privacy matters to you, DuckDuckGo or Ecosia are generally the friendlier choices.
 
 ---
 
 ## 5. Ad and tracker blocking
 
-Lesspecad ships an "Block Ads" toggle in onboarding and settings. The ad-blocking engine is **under active development**; the toggle currently controls in-app behavior but the full filter-list pipeline (including which lists are used and how they are updated) is not finalized yet.
+Lesspecad includes a built-in ad and tracker blocker. As of this writing it scores **65/100** on [adblock-tester.com](https://adblock-tester.com) — for comparison, Safari scores ~43 and Chrome (mobile) ~45. The blocker is under active development and the score will improve in future releases.
 
-When the implementation is finalized, this document will be updated to describe:
+### How it works
 
-- Which filter lists are bundled and which are fetched
-- The exact URLs the app contacts to update lists
-- The update frequency
+- **Hostname-based filtering.** Network requests whose hostname matches the blocklist are dropped before they reach the wider internet.
+- **Fully offline.** The blocklist is bundled with the app (`assets/adblock_hosts.txt` plus a small built-in `staticHosts` set). Lesspecad does **not** download or update the list over the network, so no third party — including any list maintainer — sees what you browse or when you launch the app.
+- **Asynchronous loading.** The list is loaded into memory in the background at startup so it doesn't slow down the first page you visit.
 
-Until that work lands, please treat the ad-blocker as an in-progress feature.
+### What's in the blocklist
+
+The bundled list targets well-known categories:
+
+- **Ad networks** — e.g. Google DoubleClick, Taboola, Outbrain, Facebook Pixel
+- **Analytics and tracking** — e.g. Google Analytics, Hotjar, Mixpanel, Segment
+- **Mobile ad SDKs** — e.g. Unity Ads, AppLovin, AdColony
+
+The exact contents of the list ship with each release in the source tree and can be inspected at any time.
+
+### Current limitations
+
+- Hostname matching only — no cosmetic (CSS) filtering yet, so some ad placeholders may remain visible on the page even when the underlying request is blocked.
+- No anti-adblock bypass.
+- The list updates only when you install a new version of Lesspecad. There is no over-the-air list update.
 
 ---
 
