@@ -93,15 +93,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        // Prepositively create WebView cache directories to prevent chromium opendir warnings/errors
-        try {
-            val webViewCacheDir = File(cacheDir, "WebView/Default/HTTP Cache/Code Cache")
-            File(webViewCacheDir, "js").mkdirs()
-            File(webViewCacheDir, "wasm").mkdirs()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
         setContent {
             val isOnboardingCompleted by viewModel.isOnboardingCompleted.collectAsStateWithLifecycle()
             val accentColorName by viewModel.accentColorName.collectAsStateWithLifecycle()
@@ -141,11 +132,38 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onPause() {
+        super.onPause()
+        try {
+            webViewPool.values.forEach { webView ->
+                webView.onPause()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        try {
+            webViewPool.values.forEach { webView ->
+                webView.onResume()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     override fun onDestroy() {
-        // Correctly clean up pooled webviews on activity destruction to prevent memory leaks
-        webViewPool.values.forEach {
-            it.stopLoading()
-            it.destroy()
+        // Correctly clean up pooled webviews on activity destruction to prevent memory leaks and InputDispatcher channel issues
+        webViewPool.values.forEach { webView ->
+            try {
+                (webView.parent as? ViewGroup)?.removeView(webView)
+                webView.stopLoading()
+                webView.destroy()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
         webViewPool.clear()
         super.onDestroy()
@@ -239,6 +257,7 @@ fun OnboardingScreen(
     onComplete: (String, String, Boolean, Boolean, String) -> Unit,
     colors: LesspecadColorScheme
 ) {
+    var currentPage by remember { mutableStateOf(1) }
     var appLanguage by remember { mutableStateOf(if (java.util.Locale.getDefault().language == "tr") "tr" else "en") }
     var searchEngine by remember { mutableStateOf("DuckDuckGo") }
     var accentColor by remember { mutableStateOf("Natural") }
@@ -257,280 +276,502 @@ fun OnboardingScreen(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth(0.88f)
-                .verticalScroll(androidx.compose.foundation.rememberScrollState())
-                .padding(vertical = 32.dp),
+                .fillMaxSize()
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(28.dp)
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Logo & Header Top Bar style
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.app_logo_1779621903831),
-                    contentDescription = "Lesspecad Logo",
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                )
-                Text(
-                    text = "Lesspecad",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = currentDemoColors.onBackground
-                )
-            }
-
-            // Welcome & Customization Text Box
+            // Top branding / progress section
             Column(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                horizontalAlignment = Alignment.Start
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = Locales.getText(appLanguage, "welcome"),
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Light,
-                    color = currentDemoColors.onBackground,
-                    lineHeight = 38.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = Locales.getText(appLanguage, "onboarding_sub"),
-                    fontSize = 14.sp,
-                    color = currentDemoColors.onBackground.copy(alpha = 0.7f),
-                    lineHeight = 20.sp
-                )
+                if (currentPage > 1) {
+                    // Small branding at top
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Image(
+                                painter = painterResource(id = R.drawable.app_logo_1779621903831),
+                                contentDescription = "Lesspecad Logo",
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(RoundedCornerShape(6.dp))
+                            )
+                            Text(
+                                text = "Lesspecad",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = currentDemoColors.onBackground
+                            )
+                        }
+                        
+                        // Page counter indicator
+                        Text(
+                            text = "$currentPage / 5",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = currentDemoColors.primary
+                        )
+                    }
+                }
             }
 
-            // Options Card
-            Card(
+            // Central content based on current page
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .shadow(2.dp, RoundedCornerShape(20.dp)),
-                colors = CardDefaults.cardColors(containerColor = currentDemoColors.surface),
-                shape = RoundedCornerShape(20.dp)
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp)
-                ) {
-                    // Language Selection Section
-                    Column {
-                        Text(
-                            text = Locales.getText(appLanguage, "select_language"),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = currentDemoColors.onBackground.copy(alpha = 0.7f),
-                            letterSpacing = 1.sp
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                when (currentPage) {
+                    1 -> {
+                        // PAGE 1: Welcome & Logo (perfectly centered)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp)
                         ) {
-                            listOf("en" to "English", "tr" to "Türkçe").forEach { (code, name) ->
-                                val selected = appLanguage == code
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(if (selected) currentDemoColors.primary else currentDemoColors.background)
-                                        .clickable { appLanguage = code }
-                                        .border(
-                                            width = 1.dp,
-                                            color = if (selected) Color.Transparent else currentDemoColors.tintBorder,
-                                            shape = RoundedCornerShape(8.dp)
-                                        )
-                                        .padding(vertical = 10.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = name,
-                                        fontSize = 11.sp,
-                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (selected) Color.White else currentDemoColors.onBackground
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    Divider(color = currentDemoColors.tintBorder, thickness = 0.5.dp)
-
-                    // Search Engine Selection
-                    Column {
-                        Text(
-                            text = Locales.getText(appLanguage, "default_search_engine"),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = currentDemoColors.onBackground.copy(alpha = 0.7f),
-                            letterSpacing = 1.sp
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            val engines = listOf("Google", "DuckDuckGo", "Bing", "Ecosia")
-                            engines.forEach { engine ->
-                                val selected = searchEngine == engine
-                                Box(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(if (selected) currentDemoColors.primary else currentDemoColors.background)
-                                        .clickable { searchEngine = engine }
-                                        .border(
-                                            width = 1.dp,
-                                            color = if (selected) Color.Transparent else currentDemoColors.tintBorder,
-                                            shape = RoundedCornerShape(8.dp)
-                                        )
-                                        .padding(vertical = 10.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = engine,
-                                        fontSize = 11.sp,
-                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (selected) Color.White else currentDemoColors.onBackground
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // Theme Accent Selector
-                    Column {
-                        Text(
-                            text = Locales.getText(appLanguage, "color_palette"),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = currentDemoColors.onBackground.copy(alpha = 0.7f),
-                            letterSpacing = 1.sp
-                        )
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            val palettes = listOf(
-                                "Natural" to Color(0xFF6750A4),
-                                "Emerald" to Color(0xFF155E37),
-                                "Teal" to Color(0xFF0F5A69),
-                                "Lavender" to Color(0xFF654A8A),
-                                "Amber" to Color(0xFF7F4E16)
+                            Image(
+                                painter = painterResource(id = R.drawable.app_logo_1779621903831),
+                                contentDescription = "Lesspecad Logo",
+                                modifier = Modifier
+                                    .size(96.dp)
+                                    .clip(RoundedCornerShape(20.dp))
+                                    .shadow(4.dp, RoundedCornerShape(20.dp))
                             )
-                            palettes.forEach { (name, color) ->
-                                val selected = accentColor == name
-                                Box(
-                                    modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(CircleShape)
-                                        .background(color)
-                                        .clickable { accentColor = name }
-                                        .border(
-                                            width = 3.dp,
-                                            color = if (selected) currentDemoColors.primary.copy(alpha = 0.4f) else Color.Transparent,
-                                            shape = CircleShape
-                                        ),
-                                    contentAlignment = Alignment.Center
+                            
+                            Text(
+                                text = "Lesspecad",
+                                fontSize = 36.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = currentDemoColors.onBackground,
+                                letterSpacing = (-0.5).sp
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Text(
+                                text = "Welcome.",
+                                fontSize = 28.sp,
+                                fontWeight = FontWeight.Light,
+                                color = currentDemoColors.onBackground
+                            )
+                            
+                            Text(
+                                text = "Equip your browser with only what you need. Ultra simple, completely yours.",
+                                fontSize = 14.sp,
+                                color = currentDemoColors.onBackground.copy(alpha = 0.7f),
+                                textAlign = TextAlign.Center,
+                                lineHeight = 20.sp,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                        }
+                    }
+                    
+                    2 -> {
+                        // PAGE 2: Language / Dil
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(20.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Language / Dil",
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = currentDemoColors.onBackground
+                            )
+                            
+                            Spacer(modifier = Modifier.height(12.dp))
+                            
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .shadow(1.dp, RoundedCornerShape(16.dp)),
+                                colors = CardDefaults.cardColors(containerColor = currentDemoColors.surface),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(20.dp),
+                                    verticalArrangement = Arrangement.spacedBy(12.dp)
                                 ) {
-                                    if (selected) {
-                                        Icon(
-                                            imageVector = Icons.Default.Check,
-                                            contentDescription = "Selected",
-                                            tint = Color.White,
-                                            modifier = Modifier.size(16.dp)
+                                    listOf("en" to "English", "tr" to "Türkçe").forEach { (code, name) ->
+                                        val selected = appLanguage == code
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(if (selected) currentDemoColors.primary else currentDemoColors.background)
+                                                .clickable { appLanguage = code }
+                                                .border(
+                                                    width = 1.dp,
+                                                    color = if (selected) Color.Transparent else currentDemoColors.tintBorder,
+                                                    shape = RoundedCornerShape(12.dp)
+                                                )
+                                                .padding(vertical = 16.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = name,
+                                                fontSize = 14.sp,
+                                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (selected) Color.White else currentDemoColors.onBackground
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    3 -> {
+                        // PAGE 3: Default Search Engine
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(20.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = Locales.getText(appLanguage, "default_search_engine"),
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = currentDemoColors.onBackground
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .shadow(1.dp, RoundedCornerShape(16.dp)),
+                                colors = CardDefaults.cardColors(containerColor = currentDemoColors.surface),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(20.dp),
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    val engines = listOf("Google", "DuckDuckGo", "Bing", "Ecosia")
+                                    engines.forEach { engine ->
+                                        val selected = searchEngine == engine
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(12.dp))
+                                                .background(if (selected) currentDemoColors.primary else currentDemoColors.background)
+                                                .clickable { searchEngine = engine }
+                                                .border(
+                                                    width = 1.dp,
+                                                    color = if (selected) Color.Transparent else currentDemoColors.tintBorder,
+                                                    shape = RoundedCornerShape(12.dp)
+                                                )
+                                                .padding(vertical = 14.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = engine,
+                                                fontSize = 14.sp,
+                                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                                color = if (selected) Color.White else currentDemoColors.onBackground
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    4 -> {
+                        // PAGE 4: Color Palette
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(20.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = Locales.getText(appLanguage, "color_palette"),
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = currentDemoColors.onBackground
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .shadow(1.dp, RoundedCornerShape(16.dp)),
+                                colors = CardDefaults.cardColors(containerColor = currentDemoColors.surface),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(24.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(24.dp)
+                                ) {
+                                    val palettes = listOf(
+                                        "Natural" to Color(0xFF6750A4),
+                                        "Emerald" to Color(0xFF155E37),
+                                        "Teal" to Color(0xFF0F5A69),
+                                        "Lavender" to Color(0xFF654A8A),
+                                        "Amber" to Color(0xFF7F4E16)
+                                    )
+                                    
+                                    // Row of large colored dots
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceEvenly,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        palettes.forEach { (name, color) ->
+                                            val selected = accentColor == name
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(48.dp)
+                                                    .clip(CircleShape)
+                                                    .background(color)
+                                                    .clickable { accentColor = name }
+                                                    .border(
+                                                        width = 3.dp,
+                                                        color = if (selected) currentDemoColors.primary.copy(alpha = 0.5f) else Color.Transparent,
+                                                        shape = CircleShape
+                                                    ),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                if (selected) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.Check,
+                                                        contentDescription = "Selected",
+                                                        tint = Color.White,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    
+                                    // Accent color label
+                                    Text(
+                                        text = "${Locales.getText(appLanguage, "selected")}: $accentColor",
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = currentDemoColors.onBackground
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    
+                    5 -> {
+                        // PAGE 5: Options (Ad Blocker & Always Incognito)
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(20.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = Locales.getText(appLanguage, "interface_settings"),
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = currentDemoColors.onBackground
+                            )
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .shadow(1.dp, RoundedCornerShape(16.dp)),
+                                colors = CardDefaults.cardColors(containerColor = currentDemoColors.surface),
+                                shape = RoundedCornerShape(16.dp)
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(20.dp),
+                                    verticalArrangement = Arrangement.spacedBy(20.dp)
+                                ) {
+                                    // Switch 1: Ad Block
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = Locales.getText(appLanguage, "ad_blocker"),
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = currentDemoColors.onBackground
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = Locales.getText(appLanguage, "ad_blocker_sub"),
+                                                fontSize = 11.sp,
+                                                color = currentDemoColors.onBackground.copy(alpha = 0.6f),
+                                                lineHeight = 16.sp
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Switch(
+                                            checked = blockAds,
+                                            onCheckedChange = { blockAds = it },
+                                            colors = SwitchDefaults.colors(
+                                                checkedThumbColor = currentDemoColors.surface,
+                                                checkedTrackColor = currentDemoColors.primary
+                                            )
+                                        )
+                                    }
+
+                                    Divider(color = currentDemoColors.tintBorder, thickness = 0.5.dp)
+
+                                    // Switch 2: Always Incognito Mode
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = Locales.getText(appLanguage, "always_incognito"),
+                                                fontSize = 14.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = currentDemoColors.onBackground
+                                            )
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = Locales.getText(appLanguage, "always_incognito_sub"),
+                                                fontSize = 11.sp,
+                                                color = currentDemoColors.onBackground.copy(alpha = 0.6f),
+                                                lineHeight = 16.sp
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Switch(
+                                            checked = incognitoByDefault,
+                                            onCheckedChange = { incognitoByDefault = it },
+                                            colors = SwitchDefaults.colors(
+                                                checkedThumbColor = currentDemoColors.surface,
+                                                checkedTrackColor = currentDemoColors.primary
+                                            )
                                         )
                                     }
                                 }
                             }
                         }
                     }
-
-                    Divider(color = currentDemoColors.tintBorder, thickness = 0.5.dp)
-
-                    // Switch 1: Ad Block
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = Locales.getText(appLanguage, "ad_blocker"),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = currentDemoColors.onBackground
-                            )
-                            Text(
-                                text = Locales.getText(appLanguage, "ad_blocker_sub"),
-                                fontSize = 10.sp,
-                                color = currentDemoColors.onBackground.copy(alpha = 0.5f)
-                            )
-                        }
-                        Switch(
-                            checked = blockAds,
-                            onCheckedChange = { blockAds = it },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = currentDemoColors.surface,
-                                checkedTrackColor = currentDemoColors.primary
-                            )
-                        )
-                    }
-
-                    // Switch 2: Privacy Mode Default
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = Locales.getText(appLanguage, "always_incognito"),
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = currentDemoColors.onBackground
-                            )
-                            Text(
-                                text = Locales.getText(appLanguage, "always_incognito_sub"),
-                                fontSize = 10.sp,
-                                color = currentDemoColors.onBackground.copy(alpha = 0.5f)
-                            )
-                        }
-                        Switch(
-                            checked = incognitoByDefault,
-                            onCheckedChange = { incognitoByDefault = it },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = currentDemoColors.surface,
-                                checkedTrackColor = currentDemoColors.primary
-                            )
-                        )
-                    }
                 }
             }
 
-            // Launch Button
-            Button(
-                onClick = { onComplete(searchEngine, accentColor, blockAds, incognitoByDefault, appLanguage) },
+            // Bottom Navigation Buttons
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(54.dp)
-                    .shadow(4.dp, CircleShape),
-                colors = ButtonDefaults.buttonColors(containerColor = currentDemoColors.primary),
-                shape = CircleShape
+                    .padding(bottom = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = Locales.getText(appLanguage, "start_browsing"),
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.White,
-                    letterSpacing = 0.5.sp
-                )
+                if (currentPage < 5) {
+                    // Next [circle-arrow-right icon] button
+                    Button(
+                        onClick = { currentPage++ },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .shadow(4.dp, CircleShape),
+                        colors = ButtonDefaults.buttonColors(containerColor = currentDemoColors.primary),
+                        shape = CircleShape
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = if (appLanguage == "tr") "Sonraki" else "Next",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                letterSpacing = 0.5.sp
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowCircleRight,
+                                contentDescription = "Next Arrow Icon",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                    
+                    // Small click navigation for back
+                    if (currentPage > 1) {
+                        TextButton(
+                            onClick = { currentPage-- },
+                            colors = ButtonDefaults.textButtonColors(contentColor = currentDemoColors.primary)
+                        ) {
+                            Text(
+                                text = if (appLanguage == "tr") "Geri" else "Back",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    } else {
+                        // Spacer to maintain exact height consistency for centering
+                        Spacer(modifier = Modifier.height(48.dp))
+                    }
+                } else {
+                    // Start Browsing [rocket icon] button on the final page
+                    Button(
+                        onClick = { onComplete(searchEngine, accentColor, blockAds, incognitoByDefault, appLanguage) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .shadow(4.dp, CircleShape),
+                        colors = ButtonDefaults.buttonColors(containerColor = currentDemoColors.primary),
+                        shape = CircleShape
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = Locales.getText(appLanguage, "start_browsing"),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                letterSpacing = 0.5.sp
+                            )
+                            Icon(
+                                imageVector = Icons.Default.RocketLaunch,
+                                contentDescription = "Rocket Icon",
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                    
+                    // Back button on final page
+                    TextButton(
+                        onClick = { currentPage-- },
+                        colors = ButtonDefaults.textButtonColors(contentColor = currentDemoColors.primary)
+                    ) {
+                        Text(
+                            text = if (appLanguage == "tr") "Geri" else "Back",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
             }
         }
     }
@@ -612,36 +853,21 @@ fun BrowserMainScreen(
         showSyncSheet,
         showSettingsSheet
     ) {
-        if (showMenuSheet || showTabsSheet || showBookmarksSheet || showHistorySheet || showDownloadsSheet || showExtensionsSheet || showSyncSheet || showSettingsSheet) {
-            try {
-                focusManager.clearFocus()
-                keyboardController?.hide()
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    // Optimize active/inactive WebViews inside the webViewPool to conserve resources and cleanly shut down background input networks
-    LaunchedEffect(activeTab?.id) {
         try {
-            webViewPool.forEach { (id, webView) ->
-                if (id == activeTab?.id) {
-                    webView.onResume()
-                } else {
-                    webView.onPause()
-                }
-            }
+            focusManager.clearFocus()
+            keyboardController?.hide()
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
+    // Optimize active/inactive WebViews inside the webViewPool: managed statefully by the AndroidView lifecycle
+
     // Retreiving the actual WebView for the active tab context
     val activeWebView = remember(activeTab?.id, webViewGeneration) {
         val key = activeTab?.id
         if (key != null) {
-            webViewPool.getOrPut(key) {
+            val webView = webViewPool.getOrPut(key) {
                 WebView(context).apply {
                     layoutParams = ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -790,8 +1016,21 @@ fun BrowserMainScreen(
                     }, "LesspecadReader")
                 }
             }
+            // Auto restore / reload active saved tab URL on process recreation or cache invalidation
+            if (webView.url.isNullOrEmpty() && activeTab != null && activeTab.url.isNotEmpty() && activeTab.url != "about:blank") {
+                webView.loadUrl(activeTab.url)
+            }
+            webView
         } else {
             null
+        }
+    }
+
+    // Synchronize GoBack / GoForward states on tab switch
+    LaunchedEffect(activeTabId, webViewGeneration) {
+        activeWebView?.let { webView ->
+            canGoBack = webView.canGoBack()
+            canGoForward = webView.canGoForward()
         }
     }
 
@@ -807,10 +1046,15 @@ fun BrowserMainScreen(
         for (id in pooledIds) {
             if (id !in activeIds) {
                 webViewPool.remove(id)?.let { webView ->
-                    (webView.parent as? ViewGroup)?.removeView(webView)
-                    webView.stopLoading()
-                    webView.clearHistory()
-                    webView.destroy()
+                    try {
+                        webView.clearFocus()
+                        (webView.parent as? ViewGroup)?.removeView(webView)
+                        webView.stopLoading()
+                        webView.clearHistory()
+                        webView.destroy()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
             }
         }
@@ -851,16 +1095,46 @@ fun BrowserMainScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Left back / forward navigation
+                    // Left back / forward / refresh navigation
                     IconButton(
                         onClick = { activeWebView?.goBack() },
                         enabled = canGoBack,
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier
+                            .size(32.dp)
+                            .testTag("nav_back")
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = Locales.getText(appLanguage, "back"),
                             tint = if (canGoBack) colors.primary else colors.onBackground.copy(alpha = 0.25f)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { activeWebView?.goForward() },
+                        enabled = canGoForward,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .testTag("nav_forward")
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                            contentDescription = Locales.getText(appLanguage, "forward"),
+                            tint = if (canGoForward) colors.primary else colors.onBackground.copy(alpha = 0.25f)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { activeWebView?.reload() },
+                        enabled = activeWebView != null && activeTab?.url != "about:blank",
+                        modifier = Modifier
+                            .size(32.dp)
+                            .testTag("nav_refresh")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = Locales.getText(appLanguage, "refresh"),
+                            tint = if (activeWebView != null && activeTab?.url != "about:blank") colors.primary else colors.onBackground.copy(alpha = 0.25f)
                         )
                     }
 
@@ -1124,7 +1398,9 @@ fun BrowserMainScreen(
                 .padding(innerPadding)
         ) {
             // Render active view container based on url presence
-            if (activeTab == null || activeTab.url == "about:blank") {
+            val showDashboard = activeTab == null || activeTab.url == "about:blank"
+
+            if (showDashboard) {
                 LocalDashboard(
                     viewModel = viewModel,
                     colors = colors,
@@ -1135,24 +1411,51 @@ fun BrowserMainScreen(
                         activeWebView?.loadUrl(destination)
                     }
                 )
-            } else {
-                val currentTabId = activeTab?.id
-                if (currentTabId != null && activeWebView != null) {
-                    key(currentTabId) {
-                        AndroidView(
-                            factory = {
-                                (activeWebView.parent as? ViewGroup)?.removeView(activeWebView)
-                                activeWebView
-                            },
-                            modifier = Modifier.fillMaxSize(),
-                            onRelease = { view ->
-                                try {
-                                    (view.parent as? ViewGroup)?.removeView(view)
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
+            }
+
+            // Always render open WebViews inside a Box layout but toggle their visibility to prevent hardware acceleration black screens and broken input channels
+            Box(modifier = Modifier.fillMaxSize()) {
+                tabs.forEach { tab ->
+                    val webView = webViewPool[tab.id]
+                    if (webView != null) {
+                        val isCurrentTabActive = (tab.id == activeTab?.id && !showDashboard)
+                        key(tab.id) {
+                            AndroidView(
+                                factory = { ctx ->
+                                    try {
+                                        (webView.parent as? ViewGroup)?.removeView(webView)
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                    webView
+                                },
+                                update = { view ->
+                                    try {
+                                        val targetVisibility = if (isCurrentTabActive) android.view.View.VISIBLE else android.view.View.GONE
+                                        if (view.visibility != targetVisibility) {
+                                            view.visibility = targetVisibility
+                                        }
+                                        if (isCurrentTabActive) {
+                                            view.onResume()
+                                            view.requestFocus()
+                                        } else {
+                                            view.onPause()
+                                        }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                },
+                                modifier = Modifier.fillMaxSize(),
+                                onRelease = { view ->
+                                    try {
+                                        view.clearFocus()
+                                        (view.parent as? ViewGroup)?.removeView(view)
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
                 }
             }

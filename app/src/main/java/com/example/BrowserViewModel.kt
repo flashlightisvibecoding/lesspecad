@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -69,11 +70,8 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
                     setupDefaultExtensions()
                 }
             }
-            repository.allTabGroups.first().let { currentGroups ->
-                if (currentGroups.isEmpty()) {
-                    setupDefaultTabGroups()
-                }
-            }
+            // Unconditionally call setupDefaultTabGroups to clean up the predefined groups
+            setupDefaultTabGroups()
             // Add initial Tab if tabs are empty
             repository.allTabs.first().let { currentTabs ->
                 if (currentTabs.isNotEmpty()) {
@@ -102,6 +100,8 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             _adBlockEnabled.value = blockAds
             _privacyEnabled.value = incognitoDefault
             _appLanguage.value = lang
+            // Tiny delay allows touch propagation, ripple animation and focus transitions to finish elegantly
+            delay(180)
             _isOnboardingCompleted.value = true
         }
     }
@@ -408,8 +408,18 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private suspend fun setupDefaultTabGroups() {
-        repository.insertTabGroup(TabGroup(id = "group_work", name = "İş", colorIndex = 0))
-        repository.insertTabGroup(TabGroup(id = "group_social", name = "Sosyal", colorIndex = 1))
-        repository.insertTabGroup(TabGroup(id = "group_research", name = "Araştırma", colorIndex = 2))
+        val idsToClean = setOf("group_work", "group_social", "group_research")
+        val currentTabs = repository.allTabs.first()
+        for (t in currentTabs) {
+            if (t.groupId in idsToClean) {
+                repository.updateTab(t.copy(groupId = null))
+            }
+        }
+        val currentGroups = repository.allTabGroups.first()
+        for (g in currentGroups) {
+            if (g.id in idsToClean) {
+                repository.deleteTabGroup(g)
+            }
+        }
     }
 }
