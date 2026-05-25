@@ -79,7 +79,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import com.example.data.*
+import kotlinx.coroutines.launch
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.text.SimpleDateFormat
@@ -96,6 +98,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // Asynchronously pre-compile and load the expanded local adblock rule database from assets
+        lifecycleScope.launch {
+            AdBlocker.loadCustomHosts(applicationContext)
+        }
 
         setContent {
             val isOnboardingCompleted by viewModel.isOnboardingCompleted.collectAsStateWithLifecycle()
@@ -1051,13 +1058,18 @@ fun BrowserMainScreen(
                         (webView.parent as? ViewGroup)?.removeView(webView)
                         webView.stopLoading()
                         webView.clearHistory()
-                        Handler(Looper.getMainLooper()).post {
+                        webView.webViewClient = WebViewClient()
+                        webView.webChromeClient = null
+                        // Post with a generous 5-second delay to ensure graphics render pipeline and any residual input actions are fully flushed/cleared before destroying
+                        Handler(Looper.getMainLooper()).postDelayed({
                             try {
-                                webView.destroy()
+                                if (webView.parent == null) {
+                                    webView.destroy()
+                                }
                             } catch (e: Exception) {
                                 e.printStackTrace()
                             }
-                        }
+                        }, 5000)
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -3120,19 +3132,5 @@ fun resolveQueryUrl(query: String, searchEngine: String): String {
 
 // Adblock evaluation keywords blocker
 private fun isAdUrl(url: String): Boolean {
-    val lower = url.lowercase()
-    val checkList = arrayOf(
-        "doubleclick.net", "googleads", "googlesyndication.com", "adservice.google",
-        "adnow.com", "adnxs.com", "adroll", "adform", "adsrvr.org", "adtech",
-        "analytics.google.com", "hotjar.com", "taboola.com", "outbrain.com",
-        "popads", "popunder", "propellerads", "yandex.ru/clck", "scorecardresearch",
-        "exoclick.com", "mgid.com", "addthis.com", "quantserve.com", "ad-delivery",
-        "adsystem", "adserver", "pixel.wp.com", "/ads/", "/advert/", "advertising"
-    )
-    for (keyword in checkList) {
-        if (lower.contains(keyword)) {
-            return true
-        }
-    }
-    return false
+    return AdBlocker.isAdUrl(url)
 }
