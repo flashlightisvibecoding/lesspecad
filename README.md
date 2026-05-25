@@ -7,9 +7,9 @@
   <img src="https://img.shields.io/badge/Database-Room%20DB-FFA000?style=for-the-badge&logo=sqlite&logoColor=white" alt="Room DB" />
 </p>
 
-Lesspecad is a next-generation, ultra-lightweight, and modern web browser developed for Android devices. It integrates simplicity, high privacy, ad blocking, extension support, and clean usability into a single cohesive experience.
+Lesspecad is a lightweight, local-first, and modern web browser developed for Android devices (compiling to an APK size under 10 MB). It integrates clean usability, local privacy controls, hostname-based ad filtering, user-script extensions, and tab management into a single cohesive experience.
 
-Built with state-of-the-art native technology adhering strictly to Jetpack Compose and Material Design 3 guidelines.
+Built with modern native Android technologies adhering to Jetpack Compose and Material Design 3 guidelines.
 
 ---
 
@@ -18,8 +18,8 @@ Built with state-of-the-art native technology adhering strictly to Jetpack Compo
 ### Key Features
 
 #### Privacy & Ad Blocker
-- **Built-in AdBlocker:** Blocks advertisements and trackers out-of-the-box without requiring third-party extensions.
-- **Incognito Mode:** Browse without leaving traces; cookies and web histories are managed independently and securely.
+- **Built-in AdBlocker:** Filters advertisements and tracking network domains out-of-the-box via a lightweight local host-matching filter, reducing page size and layout clutter without external addons.
+- **Incognito Mode:** Browse without leaving traces; session cookies, web storage, and cache are kept temporary and cleared completely from memory when the tab is closed.
 - **Incognito-by-Default Preference:** Option to start the browser in a sandboxed, clean-slate privacy session every time it launches.
 
 #### Extension & Script Engine
@@ -94,9 +94,9 @@ This project is licensed under the **Mozilla Public License 2.0 (MPL 2.0)**. See
 
 ### Öne Çıkan Özellikler
 
-#### Gelişmiş Gizlilik ve Reklam Engelleyici
-- **Dahili AdBlocker:** Üçüncü şahıs eklentilerine ihtiyaç duymadan reklamları ve izleyicileri otomatik engeller.
-- **İz Bırakmayan Gizli Mod:** Oturum çerezlerini ve arama geçmişlerini kaydedilmeyecek şekilde güvenle sınırlandırır.
+#### Gizlilik Tercihleri ve Reklam Filtresi
+- **Dahili AdFilter:** Üçüncü şahıs eklentilerine ihtiyaç duymadan, yerel bir ana makine (hostname) engelleme filtresiyle yaygın reklam ağlarını ve izleyicileri otomatik engeller.
+- **İz Bırakmayan Gizli Mod:** Web oturum çerezlerini, web depolamasını ve önbelleğini geçici oturum boyunca muhafaza eder ve gizli sekme kapatıldığında bellekten temizler.
 - **Varsayılan Gizlilik Tercihi:** Uygulamanın her zaman korumalı ve iz bırakmayan gizli modda başlatılması seçeneği.
 
 #### Eklenti ve Script Yönetimi

@@ -1016,10 +1016,6 @@ fun BrowserMainScreen(
                     }, "LesspecadReader")
                 }
             }
-            // Auto restore / reload active saved tab URL on process recreation or cache invalidation
-            if (webView.url.isNullOrEmpty() && activeTab != null && activeTab.url.isNotEmpty() && activeTab.url != "about:blank") {
-                webView.loadUrl(activeTab.url)
-            }
             webView
         } else {
             null
@@ -1051,7 +1047,13 @@ fun BrowserMainScreen(
                         (webView.parent as? ViewGroup)?.removeView(webView)
                         webView.stopLoading()
                         webView.clearHistory()
-                        webView.destroy()
+                        Handler(Looper.getMainLooper()).post {
+                            try {
+                                webView.destroy()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -1413,51 +1415,48 @@ fun BrowserMainScreen(
                 )
             }
 
-            // Always render open WebViews inside a Box layout but toggle their visibility to prevent hardware acceleration black screens and broken input channels
-            Box(modifier = Modifier.fillMaxSize()) {
-                tabs.forEach { tab ->
-                    val webView = webViewPool[tab.id]
-                    if (webView != null) {
-                        val isCurrentTabActive = (tab.id == activeTab?.id && !showDashboard)
-                        key(tab.id) {
-                            AndroidView(
-                                factory = { ctx ->
-                                    try {
-                                        (webView.parent as? ViewGroup)?.removeView(webView)
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                    webView
-                                },
-                                update = { view ->
-                                    try {
-                                        val targetVisibility = if (isCurrentTabActive) android.view.View.VISIBLE else android.view.View.GONE
-                                        if (view.visibility != targetVisibility) {
-                                            view.visibility = targetVisibility
-                                        }
-                                        if (isCurrentTabActive) {
-                                            view.onResume()
-                                            view.requestFocus()
-                                        } else {
-                                            view.onPause()
-                                        }
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                },
-                                modifier = Modifier.fillMaxSize(),
-                                onRelease = { view ->
-                                    try {
-                                        view.clearFocus()
-                                        (view.parent as? ViewGroup)?.removeView(view)
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                }
+            // Always render open WebViews inside a single container and swap views programmatically to prevent hardware acceleration black screens and broken input channels
+            if (!showDashboard && activeTab != null && activeWebView != null) {
+                AndroidView(
+                    factory = { ctx ->
+                        android.widget.FrameLayout(ctx).apply {
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT
                             )
                         }
+                    },
+                    update = { container ->
+                        try {
+                            val currentChild = if (container.childCount > 0) container.getChildAt(0) else null
+                            if (currentChild != activeWebView) {
+                                (currentChild as? WebView)?.clearFocus()
+                                (currentChild as? WebView)?.onPause()
+                                container.removeAllViews()
+                                (activeWebView.parent as? ViewGroup)?.removeView(activeWebView)
+                                container.addView(activeWebView)
+                                activeWebView.onResume()
+                                activeWebView.requestFocus()
+                            } else {
+                                activeWebView.onResume()
+                            }
+                            // Safe loadUrl after view attachment to prevent cold-start black screens
+                            if (activeWebView.url.isNullOrEmpty() && activeTab.url.isNotEmpty() && activeTab.url != "about:blank") {
+                                activeWebView.loadUrl(activeTab.url)
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                    onRelease = { container ->
+                        try {
+                            container.removeAllViews()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
-                }
+                )
             }
 
             // Real Reading Mode warm reader text container sheet overlay
