@@ -336,14 +336,29 @@ fun OnboardingScreen(
                 }
             }
 
-            // Central content based on current page
+            // Central content based on current page with smooth sliding/fading transition
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
-                when (currentPage) {
+                AnimatedContent(
+                    targetState = currentPage,
+                    transitionSpec = {
+                        if (targetState > initialState) {
+                            (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
+                                slideOutHorizontally { width -> -width } + fadeOut()
+                            )
+                        } else {
+                            (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
+                                slideOutHorizontally { width -> width } + fadeOut()
+                            )
+                        }
+                    },
+                    label = "onboarding_transition"
+                ) { page ->
+                    when (page) {
                     1 -> {
                         // PAGE 1: Welcome & Logo (perfectly centered)
                         Column(
@@ -683,6 +698,7 @@ fun OnboardingScreen(
                         }
                     }
                 }
+            }
             }
 
             // Bottom Navigation Buttons
