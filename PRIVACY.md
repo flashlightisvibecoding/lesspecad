@@ -35,7 +35,15 @@ All of the following is stored **locally on your device only**, in an app-privat
 
 You can delete any of this at any time from the in-app settings, or by clearing the app's storage from Android system settings.
 
-**Incognito mode**: while incognito, none of the above is written to disk. Closing the incognito session discards it.
+### Cookies and Local Web Storage
+- **First and Third-Party Cookies:** To ensure seamless compatibility with modern web services and account authentication flows (including Google Sign-In and other federated identity providers), Lesspecad enables first-party and third-party cookies. These are securely managed locally on-device by the Android System WebView's cookie manager and are never accessed, collected, or uploaded by Lesspecad itself.
+- **DOM & Database Storage:** Local DOM and Web SQL storage are supported locally to ensure websites and online applications function correctly.
+
+### Incognito Mode
+While incognito mode is active, your browsing session is fully isolated:
+- No history, search queries, bookmarks, or settings are committed to local disk storage.
+- Standard cache, DOM storage, and database features are restricted (using `LOAD_NO_CACHE`), and no persistent data is retained.
+- Closing an incognito session discards active navigation traces.
 
 ---
 
