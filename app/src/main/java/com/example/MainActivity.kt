@@ -26,6 +26,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.*
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -107,9 +108,16 @@ class MainActivity : ComponentActivity() {
         setContent {
             val isOnboardingCompleted by viewModel.isOnboardingCompleted.collectAsStateWithLifecycle()
             val accentColorName by viewModel.accentColorName.collectAsStateWithLifecycle()
+            val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
 
             // Resolve modern Color Palette based on current settings
-            val themeColors = getThemeColors(accentColorName)
+            val systemDark = isSystemInDarkTheme()
+            val isDark = when (themeMode) {
+                "dark" -> true
+                "light" -> false
+                else -> systemDark
+            }
+            val themeColors = getThemeColors(accentColorName, isDark)
 
             MaterialTheme(
                 colorScheme = MaterialTheme.colorScheme.copy(
@@ -126,8 +134,8 @@ class MainActivity : ComponentActivity() {
                 ) {
                     if (!isOnboardingCompleted) {
                         OnboardingScreen(
-                            onComplete = { engine, accent, ads, incog, lang ->
-                                viewModel.completeOnboarding(engine, accent, ads, incog, lang)
+                            onComplete = { engine, accent, ads, incog, lang, theme ->
+                                viewModel.completeOnboarding(engine, accent, ads, incog, lang, theme)
                             },
                             colors = themeColors
                         )
@@ -192,62 +200,103 @@ data class LesspecadColorScheme(
     val tintBorder: Color
 )
 
-fun getThemeColors(name: String): LesspecadColorScheme {
-    return when (name) {
-        "Emerald" -> LesspecadColorScheme(
-            primary = Color(0xFF155E37),
-            background = Color(0xFFF4F8F5),
-            surface = Color(0xFFFFFFFF),
-            onBackground = Color(0xFF1B241E),
-            onSurface = Color(0xFF1B241E),
-            accentLight = Color(0xFFE2EFE7),
-            tintBorder = Color(0xFFD3E2D7)
-        )
-        "Teal" -> LesspecadColorScheme(
-            primary = Color(0xFF0F5A69),
-            background = Color(0xFFF1F6F7),
-            surface = Color(0xFFFFFFFF),
-            onBackground = Color(0xFF162529),
-            onSurface = Color(0xFF162529),
-            accentLight = Color(0xFFE0ECEF),
-            tintBorder = Color(0xFFCDE1E5)
-        )
-        "Lavender" -> LesspecadColorScheme(
-            primary = Color(0xFF654A8A),
-            background = Color(0xFFF6F3F7),
-            surface = Color(0xFFFFFFFF),
-            onBackground = Color(0xFF231E29),
-            onSurface = Color(0xFF231E29),
-            accentLight = Color(0xFFEEEAF2),
-            tintBorder = Color(0xFFE1D9E7)
-        )
-        "Amber" -> LesspecadColorScheme(
-            primary = Color(0xFF7F4E16),
-            background = Color(0xFFFAF7F2),
-            surface = Color(0xFFFFFFFF),
-            onBackground = Color(0xFF2B251F),
-            onSurface = Color(0xFF2B251F),
-            accentLight = Color(0xFFF6EFE5),
-            tintBorder = Color(0xFFECE1CE)
-        )
-        "Natural" -> LesspecadColorScheme(
-            primary = Color(0xFF6750A4),
-            background = Color(0xFFFDF8F6),
-            surface = Color(0xFFFFFFFF),
-            onBackground = Color(0xFF1D1B1E),
-            onSurface = Color(0xFF1D1B1E),
-            accentLight = Color(0xFFF3EDF7),
-            tintBorder = Color(0xFFE7E0EC)
-        )
-        else -> LesspecadColorScheme( // "Natural" is also the default fallback to implement "Natural Tones" design theme
-            primary = Color(0xFF6750A4),
-            background = Color(0xFFFDF8F6),
-            surface = Color(0xFFFFFFFF),
-            onBackground = Color(0xFF1D1B1E),
-            onSurface = Color(0xFF1D1B1E),
-            accentLight = Color(0xFFF3EDF7),
-            tintBorder = Color(0xFFE7E0EC)
-        )
+fun getThemeColors(name: String, isDark: Boolean = false): LesspecadColorScheme {
+    if (isDark) {
+        return when (name) {
+            "Emerald" -> LesspecadColorScheme(
+                primary = Color(0xFF81C784),
+                background = Color(0xFF121814),
+                surface = Color(0xFF1D2620),
+                onBackground = Color(0xFFE2EFE7),
+                onSurface = Color(0xFFE2EFE7),
+                accentLight = Color(0xFF2E3B32),
+                tintBorder = Color(0xFF3C4E41)
+            )
+            "Teal" -> LesspecadColorScheme(
+                primary = Color(0xFF4DB6AC),
+                background = Color(0xFF11181A),
+                surface = Color(0xFF1A2427),
+                onBackground = Color(0xFFE0ECEF),
+                onSurface = Color(0xFFE0ECEF),
+                accentLight = Color(0xFF223236),
+                tintBorder = Color(0xFF32494E)
+            )
+            "Lavender" -> LesspecadColorScheme(
+                primary = Color(0xFFB39DDB),
+                background = Color(0xFF17141B),
+                surface = Color(0xFF211D27),
+                onBackground = Color(0xFFEEEAF2),
+                onSurface = Color(0xFFEEEAF2),
+                accentLight = Color(0xFF2E2737),
+                tintBorder = Color(0xFF41374E)
+            )
+            "Amber" -> LesspecadColorScheme(
+                primary = Color(0xFFFFB74D),
+                background = Color(0xFF1C1814),
+                surface = Color(0xFF28221B),
+                onBackground = Color(0xFFF6EFE5),
+                onSurface = Color(0xFFF6EFE5),
+                accentLight = Color(0xFF3A3025),
+                tintBorder = Color(0xFF524434)
+            )
+            else -> LesspecadColorScheme( // "Natural" is also the default fallback to implement "Natural Tones" design theme
+                primary = Color(0xFFD0BCFF),
+                background = Color(0xFF141218),
+                surface = Color(0xFF1D1B22),
+                onBackground = Color(0xFFE6E1E5),
+                onSurface = Color(0xFFE6E1E5),
+                accentLight = Color(0xFF2F293A),
+                tintBorder = Color(0xFF49454F)
+            )
+        }
+    } else {
+        return when (name) {
+            "Emerald" -> LesspecadColorScheme(
+                primary = Color(0xFF155E37),
+                background = Color(0xFFF4F8F5),
+                surface = Color(0xFFFFFFFF),
+                onBackground = Color(0xFF1B241E),
+                onSurface = Color(0xFF1B241E),
+                accentLight = Color(0xFFE2EFE7),
+                tintBorder = Color(0xFFD3E2D7)
+            )
+            "Teal" -> LesspecadColorScheme(
+                primary = Color(0xFF0F5A69),
+                background = Color(0xFFF1F6F7),
+                surface = Color(0xFFFFFFFF),
+                onBackground = Color(0xFF162529),
+                onSurface = Color(0xFF162529),
+                accentLight = Color(0xFFE0ECEF),
+                tintBorder = Color(0xFFCDE1E5)
+            )
+            "Lavender" -> LesspecadColorScheme(
+                primary = Color(0xFF654A8A),
+                background = Color(0xFFF6F3F7),
+                surface = Color(0xFFFFFFFF),
+                onBackground = Color(0xFF231E29),
+                onSurface = Color(0xFF231E29),
+                accentLight = Color(0xFFEEEAF2),
+                tintBorder = Color(0xFFE1D9E7)
+            )
+            "Amber" -> LesspecadColorScheme(
+                primary = Color(0xFF7F4E16),
+                background = Color(0xFFFAF7F2),
+                surface = Color(0xFFFFFFFF),
+                onBackground = Color(0xFF2B251F),
+                onSurface = Color(0xFF2B251F),
+                accentLight = Color(0xFFF6EFE5),
+                tintBorder = Color(0xFFECE1CE)
+            )
+            else -> LesspecadColorScheme( // "Natural" is also the default fallback to implement "Natural Tones" design theme
+                primary = Color(0xFF6750A4),
+                background = Color(0xFFFDF8F6),
+                surface = Color(0xFFFFFFFF),
+                onBackground = Color(0xFF1D1B1E),
+                onSurface = Color(0xFF1D1B1E),
+                accentLight = Color(0xFFF3EDF7),
+                tintBorder = Color(0xFFE7E0EC)
+            )
+        }
     }
 }
 
@@ -265,17 +314,24 @@ fun getGroupDotColor(index: Int): Color {
 // --- 1. Onboarding Screen ---
 @Composable
 fun OnboardingScreen(
-    onComplete: (String, String, Boolean, Boolean, String) -> Unit,
+    onComplete: (String, String, Boolean, Boolean, String, String) -> Unit,
     colors: LesspecadColorScheme
 ) {
     var currentPage by remember { mutableStateOf(1) }
     var appLanguage by remember { mutableStateOf(if (java.util.Locale.getDefault().language == "tr") "tr" else "en") }
     var searchEngine by remember { mutableStateOf("DuckDuckGo") }
     var accentColor by remember { mutableStateOf("Natural") }
+    var themeMode by remember { mutableStateOf("system") }
     var blockAds by remember { mutableStateOf(true) }
     var incognitoByDefault by remember { mutableStateOf(false) }
 
-    val currentDemoColors = getThemeColors(accentColor)
+    val systemDark = isSystemInDarkTheme()
+    val isDark = when (themeMode) {
+        "dark" -> true
+        "light" -> false
+        else -> systemDark
+    }
+    val currentDemoColors = getThemeColors(accentColor, isDark)
 
     Box(
         modifier = Modifier
@@ -589,13 +645,57 @@ fun OnboardingScreen(
                                     
                                     Spacer(modifier = Modifier.height(4.dp))
                                     
-                                    // Accent color label
+                                                                    // Accent color label
                                     Text(
                                         text = "${Locales.getText(appLanguage, "selected")}: $accentColor",
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = currentDemoColors.onBackground
                                     )
+
+                                    Divider(color = currentDemoColors.tintBorder, thickness = 0.5.dp)
+
+                                    // Dark Mode Selector inside Onboarding Page 4
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = Locales.getText(appLanguage, "dark_mode"),
+                                            fontSize = 14.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = currentDemoColors.onBackground
+                                        )
+                                        Spacer(modifier = Modifier.height(12.dp))
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            listOf(
+                                                "system" to Locales.getText(appLanguage, "dark_mode_system"),
+                                                "light" to Locales.getText(appLanguage, "dark_mode_light"),
+                                                "dark" to Locales.getText(appLanguage, "dark_mode_dark")
+                                            ).forEach { (mode, label) ->
+                                                val isSel = themeMode == mode
+                                                Box(
+                                                    modifier = Modifier
+                                                        .weight(1f)
+                                                        .clip(RoundedCornerShape(8.dp))
+                                                        .background(if (isSel) currentDemoColors.primary else currentDemoColors.background)
+                                                        .border(1.dp, if (isSel) Color.Transparent else currentDemoColors.tintBorder, RoundedCornerShape(8.dp))
+                                                        .clickable { themeMode = mode }
+                                                        .padding(vertical = 10.dp),
+                                                    contentAlignment = Alignment.Center
+                                                ) {
+                                                    Text(
+                                                        text = label,
+                                                        fontSize = 11.sp,
+                                                        color = if (isSel) Color.White else currentDemoColors.onBackground
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -759,7 +859,7 @@ fun OnboardingScreen(
                 } else {
                     // Start Browsing [rocket icon] button on the final page
                     Button(
-                        onClick = { onComplete(searchEngine, accentColor, blockAds, incognitoByDefault, appLanguage) },
+                        onClick = { onComplete(searchEngine, accentColor, blockAds, incognitoByDefault, appLanguage, themeMode) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)
@@ -830,6 +930,7 @@ fun BrowserMainScreen(
     val adBlockEnabled by viewModel.adBlockEnabled.collectAsStateWithLifecycle()
     val privacyEnabled by viewModel.privacyEnabled.collectAsStateWithLifecycle()
     val appLanguage by viewModel.appLanguage.collectAsStateWithLifecycle()
+    val themeMode by viewModel.themeMode.collectAsStateWithLifecycle()
 
     val currentReaderTitle by viewModel.currentReaderTitle.collectAsStateWithLifecycle()
     val currentReaderContent by viewModel.currentReaderContent.collectAsStateWithLifecycle()
@@ -2705,6 +2806,47 @@ fun BrowserMainScreen(
                             ) {
                                 Text(
                                     text = name,
+                                    fontSize = 11.sp,
+                                    color = if (isSel) Color.White else colors.onBackground
+                                )
+                            }
+                        }
+                    }
+                }
+
+                Divider(color = colors.tintBorder, thickness = 0.5.dp)
+
+                // Dark Mode Selector
+                Column {
+                    Text(
+                        text = Locales.getText(appLanguage, "dark_mode"),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colors.onBackground.copy(alpha = 0.6f)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf(
+                            "system" to Locales.getText(appLanguage, "dark_mode_system"),
+                            "light" to Locales.getText(appLanguage, "dark_mode_light"),
+                            "dark" to Locales.getText(appLanguage, "dark_mode_dark")
+                        ).forEach { (mode, label) ->
+                            val isSel = themeMode == mode
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSel) colors.primary else colors.background)
+                                    .border(1.dp, if (isSel) Color.Transparent else colors.tintBorder, RoundedCornerShape(8.dp))
+                                    .clickable { viewModel.setThemeMode(mode) }
+                                    .padding(vertical = 10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
                                     fontSize = 11.sp,
                                     color = if (isSel) Color.White else colors.onBackground
                                 )

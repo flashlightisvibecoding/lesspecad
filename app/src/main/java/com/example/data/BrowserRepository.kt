@@ -76,6 +76,10 @@ class BrowserRepository(
         get() = prefs.getString("accent_color_name", "Natural") ?: "Natural"
         set(value) = prefs.edit().putString("accent_color_name", value).apply()
 
+    var themeMode: String
+        get() = prefs.getString("theme_mode", "system") ?: "system"
+        set(value) = prefs.edit().putString("theme_mode", value).apply()
+
     var isAdBlockEnabled: Boolean
         get() = prefs.getBoolean("ad_block_enabled", true)
         set(value) = prefs.edit().putBoolean("ad_block_enabled", value).apply()
@@ -136,6 +140,7 @@ class BrowserRepository(
         val settingsObj = JSONObject().apply {
             put("search_engine", defaultSearchEngine)
             put("accent_color_name", accentColorName)
+            put("theme_mode", themeMode)
             put("ad_block_enabled", isAdBlockEnabled)
             put("privacy_enabled", isPrivacyEnabled)
         }
@@ -194,6 +199,7 @@ class BrowserRepository(
                 val obj = root.getJSONObject("settings")
                 if (obj.has("search_engine")) defaultSearchEngine = obj.getString("search_engine")
                 if (obj.has("accent_color_name")) accentColorName = obj.getString("accent_color_name")
+                if (obj.has("theme_mode")) themeMode = obj.getString("theme_mode")
                 if (obj.has("ad_block_enabled")) isAdBlockEnabled = obj.getBoolean("ad_block_enabled")
                 if (obj.has("privacy_enabled")) isPrivacyEnabled = obj.getBoolean("privacy_enabled")
             }

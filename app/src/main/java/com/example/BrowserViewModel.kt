@@ -50,6 +50,9 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     private val _accentColorName = MutableStateFlow(repository.accentColorName)
     val accentColorName: StateFlow<String> = _accentColorName.asStateFlow()
 
+    private val _themeMode = MutableStateFlow(repository.themeMode)
+    val themeMode: StateFlow<String> = _themeMode.asStateFlow()
+
     private val _adBlockEnabled = MutableStateFlow(repository.isAdBlockEnabled)
     val adBlockEnabled: StateFlow<Boolean> = _adBlockEnabled.asStateFlow()
 
@@ -90,13 +93,14 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
 
     // --- Actions ---
 
-    fun completeOnboarding(engine: String, accent: String, blockAds: Boolean, incognitoDefault: Boolean, lang: String) {
+    fun completeOnboarding(engine: String, accent: String, blockAds: Boolean, incognitoDefault: Boolean, lang: String, theme: String) {
         viewModelScope.launch {
             repository.defaultSearchEngine = engine
             repository.accentColorName = accent
             repository.isAdBlockEnabled = blockAds
             repository.isPrivacyEnabled = incognitoDefault
             repository.appLanguage = lang
+            repository.themeMode = theme
             repository.isOnboardingCompleted = true
 
             _searchEngine.value = engine
@@ -104,6 +108,7 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
             _adBlockEnabled.value = blockAds
             _privacyEnabled.value = incognitoDefault
             _appLanguage.value = lang
+            _themeMode.value = theme
             // Tiny delay allows touch propagation, ripple animation and focus transitions to finish elegantly
             delay(180)
             _isOnboardingCompleted.value = true
@@ -128,6 +133,11 @@ class BrowserViewModel(application: Application) : AndroidViewModel(application)
     fun setAccentColor(accent: String) {
         repository.accentColorName = accent
         _accentColorName.value = accent
+    }
+
+    fun setThemeMode(mode: String) {
+        repository.themeMode = mode
+        _themeMode.value = mode
     }
 
     fun setSearchEngine(engine: String) {
